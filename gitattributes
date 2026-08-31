@@ -1,0 +1,2 @@
+# Los archivos de texto se guardan y entregan con LF sin importar el SO porque se trabaja con Windows y Linux
+* text=auto eol=lf
