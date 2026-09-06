@@ -1,6 +1,6 @@
 # SubastaYa
 
-Esta es una plataforma web de subastas en tiempo real con billetera virtual y saldo en
+Eesta es una plataforma web de subastas en tiempo real con billetera virtual y saldo en
 garantía (escrow).
 
 Trabajo Práctico de la cátedra **Proyecto de Software** — Carrera de Ingeniería
@@ -9,7 +9,7 @@ en Informática, Instituto de Ingeniería y Agronomía. **Universidad Nacional A
 ## ⏭ Integrantes del proyecto ⏭
 
 - Pablo Daniel Scardiglia Billordo — [@Pabl0ScB](https://github.com/Pabl0ScB)
-- Alexis Lionel Monte - 
+- Alexis Lionel Monte - [@montealexis5-create](https://github.com/montealexis5-create)
 
 ## Descripción
 
