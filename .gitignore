@@ -433,3 +433,6 @@ FodyWeavers.xsd
 
 # Configuración local
 appsettings.Development.json
+
+.vscode/
+
