@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SubastaYa.Infrastructure.Persistencia;
+using SubastaYa.Infrastructure.Seed;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +28,7 @@ app.UseSwaggerUI();
 app.UseCors("Frontend");
 
 app.MapControllers();
-
+app.Services.AplicarDatosSemilla();
 app.Run();
 
 // ¡¡¡PENDIENTE!!!1!! todavia no corresponde:
