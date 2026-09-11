@@ -11,6 +11,8 @@ namespace SubastaYa.Infrastructure.Seed;
 /// No usa HasData() porque las fechas de las subastas tienen que calcularse
 /// relativas a DateTime.UtcNow en cada arranque, no quedar congeladas en la migración.
 /// Es idempotente: si ya hay usuarios, no hace nada.
+///
+/// Ajustado según la sección 3.3 "Datos Semilla Obligatorios (Seed Data)" del enunciado.
 /// </summary>
 public static class DatosSemilla
 {
@@ -31,20 +33,20 @@ public static class DatosSemilla
 
         // ---------- 1. Categorías ----------
         var tecnologia = new Categoria { Nombre = "Tecnología" };
-        var hogar = new Categoria { Nombre = "Hogar" };
+        var indumentaria = new Categoria { Nombre = "Indumentaria" };
         var vehiculos = new Categoria { Nombre = "Vehículos" };
         var coleccionables = new Categoria { Nombre = "Coleccionables" };
 
-        contexto.Categorias.AddRange(tecnologia, hogar, vehiculos, coleccionables);
+        contexto.Categorias.AddRange(tecnologia, indumentaria, vehiculos, coleccionables);
         contexto.SaveChanges(); // necesitamos los Id generados para las subastas
 
         // ---------- 2. Usuarios ----------
-        var vendedor1 = new Usuario
+        var vendedor = new Usuario
         {
-            Email = "vendedor1@test.com",
+            Email = "vendedor@test.com",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(PasswordDePrueba),
-            Nombre = "Vendedor Uno",
-            Seudonimo = "vendedor1",
+            Nombre = "Vendedor",
+            Seudonimo = "vendedor",
             FechaRegistro = ahora
         };
 
@@ -66,24 +68,32 @@ public static class DatosSemilla
             FechaRegistro = ahora
         };
 
-        var comprador3 = new Usuario
+        var sinFondos = new Usuario
         {
-            Email = "comprador3@test.com",
+            Email = "sinfondos@test.com",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(PasswordDePrueba),
-            Nombre = "Comprador Tres",
-            Seudonimo = "comprador3",
+            Nombre = "Sin Fondos",
+            Seudonimo = "sinfondos",
             FechaRegistro = ahora
         };
 
-        contexto.Usuarios.AddRange(vendedor1, comprador1, comprador2, comprador3);
+        contexto.Usuarios.AddRange(vendedor, comprador1, comprador2, sinFondos);
         contexto.SaveChanges(); // ya tenemos los Id de usuario
 
         // ---------- 3. Billeteras ----------
-        // SaldoRetenido de comprador2 = 5.500 (no 0): ver nota en el chat sobre por qué
-        // se ajustó para que la subasta "vencida con ganador" tenga su retención real.
-        var billeteraVendedor1 = new Billetera
+        // comprador1: Total $150.000 / Retenido $45.000 / Disponible $105.000 (según enunciado).
+        //
+        // comprador2: Total $200.000, SaldoRetenido = 5.500 (no 0).
+        // TODO(pendiente profesor): el enunciado lo describe como "Postor habilitado" con
+        // Disponible = $200.000 (o sea, sin nada retenido), pero acá gana la subasta
+        // "Vencida con ganador" y necesita su puja retenida hasta que el worker la liquide
+        // (Bloque 8). Es una contradicción del propio enunciado -> ya se le consultó al
+        // profesor. Mientras no responda, se deja comprador2 con esta retención y ganando
+        // esa subasta. NO agregar un quinto usuario para esto todavía: eso se evalúa recién
+        // en el Bloque 4 (billetera/ledger), en un commit aparte.
+        var billeteraVendedor = new Billetera
         {
-            UsuarioId = vendedor1.Id,
+            UsuarioId = vendedor.Id,
             SaldoTotal = 0m,
             SaldoRetenido = 0m,
             Version = 1
@@ -92,7 +102,7 @@ public static class DatosSemilla
         var billeteraComprador1 = new Billetera
         {
             UsuarioId = comprador1.Id,
-            SaldoTotal = 100000m,
+            SaldoTotal = 150000m,
             SaldoRetenido = 45000m,
             Version = 1
         };
@@ -100,21 +110,21 @@ public static class DatosSemilla
         var billeteraComprador2 = new Billetera
         {
             UsuarioId = comprador2.Id,
-            SaldoTotal = 100000m,
+            SaldoTotal = 200000m,
             SaldoRetenido = 5500m,
             Version = 1
         };
 
-        var billeteraComprador3 = new Billetera
+        var billeteraSinFondos = new Billetera
         {
-            UsuarioId = comprador3.Id,
-            SaldoTotal = 1000m,
+            UsuarioId = sinFondos.Id,
+            SaldoTotal = 500m,
             SaldoRetenido = 0m,
             Version = 1
         };
 
         contexto.Billeteras.AddRange(
-            billeteraVendedor1, billeteraComprador1, billeteraComprador2, billeteraComprador3);
+            billeteraVendedor, billeteraComprador1, billeteraComprador2, billeteraSinFondos);
         contexto.SaveChanges();
 
         // ---------- 4. Subastas ----------
@@ -122,7 +132,7 @@ public static class DatosSemilla
         // Caso A: Activa estándar -> catálogo, sala en vivo, puja normal
         var subastaActivaEstandar = new Subasta
         {
-            VendedorId = vendedor1.Id,
+            VendedorId = vendedor.Id,
             CategoriaId = tecnologia.Id,
             Titulo = "Notebook Gamer usada",
             Descripcion = "Notebook gamer, poco uso, con cargador original.",
@@ -139,10 +149,15 @@ public static class DatosSemilla
         };
 
         // Caso B: Activa crítica -> alerta visual y anti-sniping
+        // NOTA: sigue en la categoría "Indumentaria" (ex "Hogar") por el rename de categorías;
+        // el título/descripción del ítem (sillones de living) ya no encaja semánticamente con
+        // esa categoría. El enunciado solo pide el rename de la categoría, no reasignar qué
+        // ítem va en cuál — si querés que el contenido tenga sentido, cambiá este ítem por
+        // algo de indumentaria (ej. "Campera de cuero") o movelo a otra categoría.
         var subastaActivaCritica = new Subasta
         {
-            VendedorId = vendedor1.Id,
-            CategoriaId = hogar.Id,
+            VendedorId = vendedor.Id,
+            CategoriaId = indumentaria.Id,
             Titulo = "Set de sillones de living",
             Descripcion = "Juego de living de 3 cuerpos, buen estado.",
             UrlImagen = "https://picsum.photos/seed/sillones/600/400",
@@ -160,7 +175,7 @@ public static class DatosSemilla
         // Caso C: Programada -> bloqueo de pujas antes del inicio
         var subastaProgramada = new Subasta
         {
-            VendedorId = vendedor1.Id,
+            VendedorId = vendedor.Id,
             CategoriaId = vehiculos.Id,
             Titulo = "Bicicleta rodado 29",
             Descripcion = "Bicicleta de montaña, rodado 29, poco uso.",
@@ -179,7 +194,7 @@ public static class DatosSemilla
         // Caso D: Vencida con ganador -> cierre y liquidación del worker
         var subastaVencidaConGanador = new Subasta
         {
-            VendedorId = vendedor1.Id,
+            VendedorId = vendedor.Id,
             CategoriaId = coleccionables.Id,
             Titulo = "Álbum de figuritas completo",
             Descripcion = "Álbum antiguo completo, edición especial.",
@@ -198,7 +213,7 @@ public static class DatosSemilla
         // Caso E: Vencida desierta -> transición a Desierta
         var subastaVencidaDesierta = new Subasta
         {
-            VendedorId = vendedor1.Id,
+            VendedorId = vendedor.Id,
             CategoriaId = tecnologia.Id,
             Titulo = "Router viejo sin uso",
             Descripcion = "Router en caja, nunca usado.",
@@ -220,6 +235,8 @@ public static class DatosSemilla
         contexto.SaveChanges(); // necesitamos los Id de subasta para las pujas
 
         // ---------- 5. Pujas ----------
+        // Historial de las 2 ofertas previas en la subasta activa estándar (enunciado 3.3):
+        // comprador2 pujó primero, comprador1 la superó y quedó como líder actual.
         var pujaPreviaComprador2 = new Puja
         {
             SubastaId = subastaActivaEstandar.Id,
@@ -250,12 +267,14 @@ public static class DatosSemilla
         // Deposito = cómo entró la plata a la billetera (cuenta para el SaldoTotal).
         // Retencion = por qué una parte está bloqueada ahora mismo (NO afecta el
         // SaldoTotal, solo explica el SaldoRetenido). Ver nota en el chat.
+        // Los montos de Deposito de cada usuario se corrigieron para que coincidan
+        // 1:1 con el SaldoTotal de su billetera (sección 3.3 del enunciado).
         contexto.AsientosLedger.AddRange(
             new AsientoLedger
             {
                 BilleteraId = billeteraComprador1.Id,
                 Tipo = TipoAsiento.Deposito,
-                Monto = 100000m,
+                Monto = 150000m,
                 SubastaId = null,
                 Descripcion = "Carga inicial de saldo (seed)",
                 Fecha = ahora.AddDays(-1)
@@ -273,7 +292,7 @@ public static class DatosSemilla
             {
                 BilleteraId = billeteraComprador2.Id,
                 Tipo = TipoAsiento.Deposito,
-                Monto = 100000m,
+                Monto = 200000m,
                 SubastaId = null,
                 Descripcion = "Carga inicial de saldo (seed)",
                 Fecha = ahora.AddDays(-1)
@@ -289,9 +308,9 @@ public static class DatosSemilla
             },
             new AsientoLedger
             {
-                BilleteraId = billeteraComprador3.Id,
+                BilleteraId = billeteraSinFondos.Id,
                 Tipo = TipoAsiento.Deposito,
-                Monto = 1000m,
+                Monto = 500m,
                 SubastaId = null,
                 Descripcion = "Carga inicial de saldo (seed)",
                 Fecha = ahora.AddDays(-1)
