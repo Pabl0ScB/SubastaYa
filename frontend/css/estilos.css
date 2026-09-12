@@ -1,0 +1,21 @@
+/* Estilos propios de SubastaYa. Bootstrap se carga por CDN en cada pagina. */
+
+body {
+    min-height: 100vh;
+}
+
+/* Contador regresivo de las subastas */
+.contador {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.contador-normal { color: var(--bs-body-color); }
+.contador-alerta { color: var(--bs-warning-text-emphasis); }
+.contador-critico { color: var(--bs-danger-text-emphasis); }
+
+/* Imagen de las tarjetas del catalogo */
+.tarjeta-subasta img {
+    height: 180px;
+    object-fit: cover;
+}
