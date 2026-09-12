@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using SubastaYa.Api.Servicios;
 using SubastaYa.Infrastructure.Persistencia;
 using SubastaYa.Infrastructure.Seed;
 
@@ -40,6 +41,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+// Servicios de aplicacion.
+// Scoped por convencion del proyecto: mismo ciclo de vida que el DbContext y que los
+// repositorios, asi todo lo que participa de una misma peticion comparte instancia.
+builder.Services.AddScoped<IServicioDePasswords, ServicioDePasswords>();
 
 // Controllers y documentacion de la API
 builder.Services.AddControllers();
