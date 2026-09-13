@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using SubastaYa.Api.Middleware;
 using SubastaYa.Api.Servicios;
 using SubastaYa.Infrastructure.Persistencia;
 using SubastaYa.Infrastructure.Seed;
@@ -53,6 +54,7 @@ builder.Services.AddAuthorization();
 // repositorios, asi todo lo que participa de una misma peticion comparte instancia.
 builder.Services.AddScoped<IServicioDePasswords, ServicioDePasswords>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IServicioDeUsuarios, ServicioDeUsuarios>();
 
 // Controllers y documentacion de la API
 builder.Services.AddControllers();
@@ -87,6 +89,10 @@ builder.Services.AddCors(opt => opt.AddPolicy("Frontend", p =>
 
 var app = builder.Build();
 
+// Va primero en el pipeline: para atrapar una excepcion tiene que envolver a todo lo
+// que venga despues.
+app.UseMiddleware<ManejadorDeExcepcionesMiddleware>();
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
@@ -102,7 +108,5 @@ app.MapControllers();
 app.Services.AplicarDatosSemilla();
 app.Run();
 
-// Pendiente de bloques posteriores:
-// - Registrar IAsientoLedgerRepository e IRegistroAuditoriaRepository (Tareas 3.4 y 4.4)
-// - UseMiddleware<ManejadorDeExcepcionesMiddleware> (Bloque 7, junto con las
-//   excepciones de dominio que traduce)
+// Pendiente: registrar IAsientoLedgerRepository e IRegistroAuditoriaRepository
+// cuando esten escritas sus implementaciones.
