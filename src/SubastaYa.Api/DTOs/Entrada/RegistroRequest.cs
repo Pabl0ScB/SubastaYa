@@ -3,16 +3,14 @@ using System.ComponentModel.DataAnnotations;
 namespace SubastaYa.Api.DTOs.Entrada;
 
 /// <summary>
-/// Datos que manda el cliente para registrarse.
-/// Las anotaciones validan el FORMATO: si alguna falla, [ApiController] devuelve
-/// 400 automaticamente, sin que el servicio llegue a ejecutarse. Las reglas de
-/// negocio (email ya registrado, seudonimo repetido) se validan en el servicio y
-/// devuelven 409.
-/// Los largos maximos coinciden con los de las columnas para no delegarle a la
-/// base de datos un error que podemos detectar antes.
+/// Datos de alta de un usuario. Las anotaciones validan el formato y [ApiController]
+/// responde 400 automaticamente si alguna falla, antes de llegar al servicio. Las reglas
+/// de negocio (email o seudonimo ya usados) se validan alli y responden 409.
 /// </summary>
 public class RegistroRequest
 {
+    // Los largos maximos son los mismos de las columnas, para rechazar acá y no con un
+    // error de la base de datos.
     [Required(ErrorMessage = "El email es obligatorio.")]
     [EmailAddress(ErrorMessage = "El email no tiene un formato valido.")]
     [MaxLength(150)]

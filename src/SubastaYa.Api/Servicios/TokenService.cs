@@ -8,22 +8,31 @@ namespace SubastaYa.Api.Servicios;
 
 public class TokenService : ITokenService
 {
-    private readonly IConfiguration _configuracion;
+    private static readonly JwtSecurityTokenHandler Handler = new();
+
+    private readonly string _clave;
+    private readonly string _emisor;
+    private readonly string _destinatario;
+    private readonly int _minutosDeVigencia;
 
     public TokenService(IConfiguration configuracion)
     {
-        _configuracion = configuracion;
+        // Se leen al construir el servicio y no en cada emision: si falta un valor, el
+        // error dice cual, en vez de reventar con una referencia nula mas adentro.
+        _clave = Requerido(configuracion, "Jwt:Clave");
+        _emisor = Requerido(configuracion, "Jwt:Issuer");
+        _destinatario = Requerido(configuracion, "Jwt:Audience");
+        _minutosDeVigencia = int.Parse(Requerido(configuracion, "Jwt:ExpiracionMinutos"));
     }
 
     public (string Token, DateTime ExpiraEn) GenerarToken(Usuario usuario)
     {
-        var minutos = int.Parse(_configuracion["Jwt:ExpiracionMinutos"]!);
-        var expiraEn = DateTime.UtcNow.AddMinutes(minutos);
+        var ahora = DateTime.UtcNow;
+        var expiraEn = ahora.AddMinutes(_minutosDeVigencia);
 
-        // El claim "sub" (subject) lleva el id del usuario. Es la pieza central del
-        // sistema: gracias a el, endpoints como /wallets/me y el motor de pujas saben
-        // quien esta operando sin que el id viaje nunca en la URL ni en el body.
-        // Si viniera del body, cualquiera podria pujar en nombre de otro.
+        // El claim "sub" lleva el id. Gracias a el los endpoints "/me" y el registro de
+        // pujas saben quien opera sin que el id viaje en la URL ni en el body; si viniera
+        // del body, cualquiera podria actuar en nombre de otro.
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, usuario.Id.ToString()),
@@ -31,19 +40,22 @@ public class TokenService : ITokenService
             new Claim("nombre", usuario.Nombre)
         };
 
-        // La firma usa la misma clave y el mismo algoritmo que la validacion.
-        var clave = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuracion["Jwt:Clave"]!));
-        var credenciales = new SigningCredentials(clave, SecurityAlgorithms.HmacSha256);
+        var credenciales = new SigningCredentials(
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_clave)),
+            SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: _configuracion["Jwt:Issuer"],
-            audience: _configuracion["Jwt:Audience"],
+            issuer: _emisor,
+            audience: _destinatario,
             claims: claims,
-            notBefore: DateTime.UtcNow,
+            notBefore: ahora,
             expires: expiraEn,
             signingCredentials: credenciales);
 
-        return (new JwtSecurityTokenHandler().WriteToken(token), expiraEn);
+        return (Handler.WriteToken(token), expiraEn);
     }
+
+    private static string Requerido(IConfiguration configuracion, string clave) =>
+        configuracion[clave]
+        ?? throw new InvalidOperationException($"Falta la configuracion '{clave}'.");
 }

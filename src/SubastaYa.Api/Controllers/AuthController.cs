@@ -16,12 +16,10 @@ public class AuthController : ControllerBase
         _servicio = servicio;
     }
 
-    /// <summary>Inicia sesion y devuelve el token de acceso.</summary>
-    /// <remarks>
-    /// La ruta es un sustantivo en plural ("sessions") y no un verbo ("login"):
-    /// iniciar sesion es crear un recurso de tipo sesion, y por eso es un POST sobre
-    /// la coleccion.
-    /// </remarks>
+    /// <summary>
+    /// Inicia sesion y devuelve el token de acceso. La ruta es un sustantivo en plural y
+    /// no un verbo: iniciar sesion se modela como crear un recurso de tipo sesion.
+    /// </summary>
     [HttpPost("sessions")]
     [ProducesResponseType(typeof(SesionResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -30,13 +28,10 @@ public class AuthController : ControllerBase
     {
         var sesion = await _servicio.IniciarSesionAsync(solicitud);
 
-        if (sesion is null)
-        {
-            // Mensaje unico y deliberadamente vago: decir cual de los dos datos fallo
-            // permitiria averiguar que emails estan registrados en el sistema.
-            return Unauthorized(new ErrorResponse("Email o contrasena incorrectos."));
-        }
-
-        return Ok(sesion);
+        // Mensaje unico a proposito: distinguir si fallo el email o la contrasena
+        // permitiria averiguar que cuentas existen.
+        return sesion is null
+            ? Unauthorized(new ErrorResponse("Email o contrasena incorrectos."))
+            : Ok(sesion);
     }
 }

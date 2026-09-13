@@ -1,9 +1,8 @@
 namespace SubastaYa.Api.DTOs.Salida;
 
 /// <summary>
-/// Respuesta del login: el token firmado y los datos del usuario autenticado.
-/// Incluye al usuario para que el frontend pueda mostrar el seudonimo en la barra
-/// de navegacion sin tener que hacer una segunda peticion apenas inicia sesion.
+/// Respuesta del login. Incluye al usuario para que el frontend pueda mostrar el
+/// seudonimo apenas inicia sesion, sin una segunda peticion.
 /// </summary>
 public class SesionResponse
 {

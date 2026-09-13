@@ -15,10 +15,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
-// Autenticacion por JWT.
-// El servidor no guarda sesiones: confia en el token porque puede recalcular su firma
-// con la clave secreta. Por eso la clave vive en user-secrets y nunca en appsettings:
-// quien la tenga puede fabricar un token haciendose pasar por cualquier usuario.
+// Autenticacion por JWT. El servidor no guarda sesiones: confia en el token porque
+// puede recalcular su firma con la clave secreta, que vive en user-secrets y nunca en
+// appsettings porque quien la tenga puede hacerse pasar por cualquier usuario.
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opciones =>
     {
@@ -41,17 +40,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
 
         // Sin esto, ASP.NET renombra los claims estandar a URIs largas heredadas de
-        // WS-Federation: "sub" pasaria a leerse como
-        // "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier".
-        // Desactivarlo mantiene los nombres tal como se emiten en TokenService.
+        // WS-Federation y "sub" dejaria de leerse por su nombre.
         opciones.MapInboundClaims = false;
     });
 
 builder.Services.AddAuthorization();
 
-// Servicios de aplicacion.
-// Scoped por convencion del proyecto: mismo ciclo de vida que el DbContext y que los
-// repositorios, asi todo lo que participa de una misma peticion comparte instancia.
+// Servicios de aplicacion, Scoped igual que el DbContext: todo lo que participa de una
+// misma peticion comparte instancia.
 builder.Services.AddScoped<IServicioDePasswords, ServicioDePasswords>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IServicioDeUsuarios, ServicioDeUsuarios>();
@@ -90,8 +86,7 @@ builder.Services.AddCors(opt => opt.AddPolicy("Frontend", p =>
 
 var app = builder.Build();
 
-// Va primero en el pipeline: para atrapar una excepcion tiene que envolver a todo lo
-// que venga despues.
+// Va primero: para atrapar una excepcion tiene que envolver a todo lo que sigue.
 app.UseMiddleware<ManejadorDeExcepcionesMiddleware>();
 
 app.UseSwagger();
@@ -99,9 +94,9 @@ app.UseSwaggerUI();
 
 app.UseCors("Frontend");
 
-// El orden importa: UseAuthentication averigua QUIEN es el usuario a partir del token,
-// y UseAuthorization decide si ese usuario puede acceder. Invertirlos hace que
-// [Authorize] evalue sobre un usuario todavia sin identificar y rechace todo con 401.
+// El orden importa: UseAuthentication averigua quien es el usuario y UseAuthorization
+// decide si puede acceder. Invertidos, [Authorize] evaluaria sobre un usuario aun sin
+// identificar y rechazaria todo con 401.
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -5,15 +5,10 @@ using SubastaYa.Domain.Excepciones;
 namespace SubastaYa.Api.Middleware;
 
 /// <summary>
-/// Unico lugar donde las excepciones de dominio se traducen a codigos HTTP.
-///
-/// Existe para que los servicios puedan senalizar un fallo sin saber nada de HTTP
-/// -estan una capa por debajo- y para que los controladores no tengan que repetir un
-/// try/catch cada uno. Asi la logica de negocio no queda acoplada al controlador, que
-/// se limita a su unica responsabilidad: traducir una peticion HTTP en una respuesta.
-///
-/// Nunca devuelve el stack trace al cliente: lo inesperado se registra en el log del
-/// servidor y al cliente le llega un 500 con un mensaje generico.
+/// Traduce las excepciones de dominio a codigos HTTP. Centralizarlo permite que los
+/// servicios senalicen un fallo sin conocer HTTP y que los controladores no repitan un
+/// try/catch cada uno. Lo inesperado se registra en el log y al cliente le llega un 500
+/// generico, nunca el stack trace.
 /// </summary>
 public class ManejadorDeExcepcionesMiddleware
 {
@@ -39,8 +34,7 @@ public class ManejadorDeExcepcionesMiddleware
         }
         catch (Exception ex)
         {
-            // Si la respuesta ya empezo a escribirse no se pueden cambiar los headers;
-            // lo unico sensato es dejar que la conexion falle y registrarlo.
+            // Si la respuesta ya empezo a escribirse no se pueden cambiar los headers.
             if (contexto.Response.HasStarted)
             {
                 _logger.LogError(ex, "Excepcion despues de iniciada la respuesta.");
@@ -74,8 +68,7 @@ public class ManejadorDeExcepcionesMiddleware
         AccionProhibidaException =>
             (StatusCodes.Status403Forbidden, Mensaje(ex)),
 
-        // Los dos casos de 409. El de concurrencia puede traer un cuerpo enriquecido
-        // (la puja actual, el monto sugerido) para que el frontend ofrezca reintentar.
+        // Las dos causas de 409. La de concurrencia puede traer un cuerpo enriquecido.
         ConflictoDeConcurrenciaException c =>
             (StatusCodes.Status409Conflict, c.Detalle ?? Mensaje(ex)),
 

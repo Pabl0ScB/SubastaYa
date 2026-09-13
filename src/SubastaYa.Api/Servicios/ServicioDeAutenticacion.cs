@@ -7,13 +7,11 @@ namespace SubastaYa.Api.Servicios;
 
 public class ServicioDeAutenticacion : IServicioDeAutenticacion
 {
-    /// <summary>
-    /// Hash valido de descarte, usado cuando el email no existe. Verificar contra el
-    /// cuesta lo mismo que verificar contra uno real, que es justamente el punto:
-    /// ver la nota sobre el tiempo de respuesta mas abajo.
-    /// </summary>
-    private const string HashDeDescarte =
-        "$2a$11$3S1kU7VWkXqZ9c5nZ0bZ8OqQ2m9wH1Yk8rJ1sYyB3cQeF6vT0aXqW";
+    // Hash contra el que se verifica cuando el email no existe. Se genera al iniciar en
+    // vez de dejarlo escrito como literal: un literal mal copiado no seria un hash valido
+    // y BCrypt lanzaria una excepcion en lugar de devolver false.
+    private static readonly string HashDeDescarte =
+        BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString());
 
     private readonly AppDbContext _contexto;
     private readonly IServicioDePasswords _passwords;
@@ -31,20 +29,21 @@ public class ServicioDeAutenticacion : IServicioDeAutenticacion
 
     public async Task<SesionResponse?> IniciarSesionAsync(LoginRequest solicitud)
     {
-        // Misma normalizacion que en el registro. Sin esto, quien se registro
-        // escribiendo "Ana@Test.com" no podria volver a entrar nunca.
+        // Misma normalizacion que en el registro: sin esto, quien se dio de alta
+        // escribiendo "Ana@Test.com" no podria volver a entrar.
         var email = solicitud.Email.Trim().ToLowerInvariant();
 
         var usuario = await _contexto.Usuarios
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Email == email);
 
-        // Se verifica el hash SIEMPRE, incluso si el usuario no existe.
-        // Si se respondiera de inmediato ante un email inexistente y se tardara los
-        // milisegundos de BCrypt cuando existe, un atacante podria distinguir los dos
-        // casos midiendo el tiempo de respuesta y deducir que emails estan registrados.
-        var hash = usuario?.PasswordHash ?? HashDeDescarte;
-        var passwordValida = _passwords.Verificar(solicitud.Password, hash);
+        // Se verifica el hash aunque el usuario no exista. Si se respondiera de inmediato
+        // ante un email desconocido y se tardaran los milisegundos de BCrypt cuando
+        // existe, esa diferencia de tiempo permitiria averiguar que emails estan
+        // registrados.
+        var passwordValida = _passwords.Verificar(
+            solicitud.Password,
+            usuario?.PasswordHash ?? HashDeDescarte);
 
         if (usuario is null || !passwordValida)
         {
@@ -57,14 +56,7 @@ public class ServicioDeAutenticacion : IServicioDeAutenticacion
         {
             Token = token,
             ExpiraEn = expiraEn,
-            Usuario = new UsuarioResponse
-            {
-                Id = usuario.Id,
-                Email = usuario.Email,
-                Nombre = usuario.Nombre,
-                Seudonimo = usuario.Seudonimo,
-                FechaRegistro = usuario.FechaRegistro
-            }
+            Usuario = UsuarioResponse.Desde(usuario)
         };
     }
 }

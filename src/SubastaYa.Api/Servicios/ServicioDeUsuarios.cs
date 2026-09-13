@@ -20,13 +20,11 @@ public class ServicioDeUsuarios : IServicioDeUsuarios
 
     public async Task<UsuarioResponse> RegistrarAsync(RegistroRequest solicitud)
     {
-        // El email se normaliza a minusculas: sin esto, "Ana@test.com" y "ana@test.com"
-        // serian dos cuentas distintas y el indice unico no serviria de nada.
+        // Se normaliza el email: sin esto "Ana@test.com" y "ana@test.com" serian dos
+        // cuentas distintas y el indice unico no cumpliria su funcion.
         var email = solicitud.Email.Trim().ToLowerInvariant();
         var seudonimo = solicitud.Seudonimo.Trim();
 
-        // Reglas de negocio: se validan aca, no en el controlador, y no son lo mismo
-        // que las anotaciones del DTO (esas ya rechazaron el formato con un 400).
         if (await _contexto.Usuarios.AnyAsync(u => u.Email == email))
             throw new RecursoDuplicadoException("Ya existe una cuenta registrada con ese email.");
 
@@ -34,8 +32,7 @@ public class ServicioDeUsuarios : IServicioDeUsuarios
             throw new RecursoDuplicadoException("Ese seudonimo ya esta en uso.");
 
         // Transaccion explicita: el usuario y su billetera se crean juntos o no se crea
-        // ninguno. Un usuario sin billetera reventaria mas adelante en el motor de pujas,
-        // que la busca para retener saldo y se encontraria con null.
+        // ninguno. Un usuario sin billetera fallaria al pujar, cuando se busque su saldo.
         await using var transaccion = await _contexto.Database.BeginTransactionAsync();
 
         var usuario = new Usuario
@@ -57,13 +54,20 @@ public class ServicioDeUsuarios : IServicioDeUsuarios
         await _contexto.SaveChangesAsync();
         await transaccion.CommitAsync();
 
-        return new UsuarioResponse
+        return UsuarioResponse.Desde(usuario);
+    }
+
+    public async Task<UsuarioResponse> ObtenerPorIdAsync(int id)
+    {
+        var usuario = await _contexto.Usuarios
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == id);
+
+        if (usuario is null)
         {
-            Id = usuario.Id,
-            Email = usuario.Email,
-            Nombre = usuario.Nombre,
-            Seudonimo = usuario.Seudonimo,
-            FechaRegistro = usuario.FechaRegistro
-        };
+            throw new RecursoNoEncontradoException("El usuario no existe.");
+        }
+
+        return UsuarioResponse.Desde(usuario);
     }
 }
