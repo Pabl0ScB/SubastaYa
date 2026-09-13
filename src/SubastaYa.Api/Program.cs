@@ -55,6 +55,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IServicioDePasswords, ServicioDePasswords>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IServicioDeUsuarios, ServicioDeUsuarios>();
+builder.Services.AddScoped<IServicioDeAutenticacion, ServicioDeAutenticacion>();
 
 // Controllers y documentacion de la API
 builder.Services.AddControllers();
