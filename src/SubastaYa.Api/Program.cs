@@ -38,6 +38,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             // expiracion es exacta.
             ClockSkew = TimeSpan.Zero
         };
+
+        // Sin esto, ASP.NET renombra los claims estandar a URIs largas heredadas de
+        // WS-Federation: "sub" pasaria a leerse como
+        // "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier".
+        // Desactivarlo mantiene los nombres tal como se emiten en TokenService.
+        opciones.MapInboundClaims = false;
     });
 
 builder.Services.AddAuthorization();
@@ -46,6 +52,7 @@ builder.Services.AddAuthorization();
 // Scoped por convencion del proyecto: mismo ciclo de vida que el DbContext y que los
 // repositorios, asi todo lo que participa de una misma peticion comparte instancia.
 builder.Services.AddScoped<IServicioDePasswords, ServicioDePasswords>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 
 // Controllers y documentacion de la API
 builder.Services.AddControllers();
