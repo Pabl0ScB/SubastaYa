@@ -22,10 +22,11 @@ public class ServicioDeSubastas : IServicioDeSubastas
 
     public IQueryable<Subasta> ConstruirConsultaCatalogo(FiltroSubastasRequest filtro)
     {
+        // Sin Include: la consulta termina en una proyeccion a DTO en el controlador, y
+        // ante una proyeccion EF Core ignora los Include. El JOIN con Categoria lo genera
+        // el propio Select, que es lo que evita el problema N+1.
         var query = _contexto.Subastas
             .AsNoTracking()
-            .Include(s => s.Categoria)
-            .Include(s => s.Vendedor)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(filtro.Estado) &&
