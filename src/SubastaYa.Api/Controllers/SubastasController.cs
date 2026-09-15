@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using SubastaYa.Api.DTOs.Entrada;
 using SubastaYa.Api.DTOs.Salida;
 using SubastaYa.Api.Servicios;
-using SubastaYa.Infrastructure.Persistencia;
 
 namespace SubastaYa.Api.Controllers;
 
@@ -13,9 +12,9 @@ public class SubastasController : ControllerBase
 {
     private readonly IServicioDeSubastas _servicio;
 
-    public SubastasController(AppDbContext contexto)
+    public SubastasController(IServicioDeSubastas servicio)
     {
-        _servicio = new ServicioDeSubastas(contexto);
+        _servicio = servicio;
     }
 
     [HttpGet]

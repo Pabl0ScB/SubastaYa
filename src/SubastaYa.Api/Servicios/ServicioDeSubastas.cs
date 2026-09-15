@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SubastaYa.Api.DTOs.Entrada;
 using SubastaYa.Domain.Entidades;
-using SubastaYa.Domain.Enums;
 using SubastaYa.Infrastructure.Persistencia;
 
 namespace SubastaYa.Api.Servicios;
@@ -29,10 +28,9 @@ public class ServicioDeSubastas : IServicioDeSubastas
             .AsNoTracking()
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(filtro.Estado) &&
-            Enum.TryParse<EstadoSubasta>(filtro.Estado, ignoreCase: true, out var estado))
+        if (filtro.Estado.HasValue)
         {
-            query = query.Where(s => s.Estado == estado);
+            query = query.Where(s => s.Estado == filtro.Estado.Value);
         }
 
         if (filtro.CategoriaId.HasValue)
