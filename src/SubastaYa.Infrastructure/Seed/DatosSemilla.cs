@@ -7,7 +7,7 @@ using SubastaYa.Infrastructure.Persistencia;
 namespace SubastaYa.Infrastructure.Seed;
 
 /// <summary>
-/// Carga datos de prueba al arrancar la aplicación (Tarea 1.11).
+/// Carga datos de prueba al arrancar la aplicación.
 /// No usa HasData() porque las fechas de las subastas tienen que calcularse
 /// relativas a DateTime.UtcNow en cada arranque, no quedar congeladas en la migración.
 /// Es idempotente: si ya hay usuarios, no hace nada.
@@ -68,6 +68,19 @@ public static class DatosSemilla
             FechaRegistro = ahora
         };
 
+        // Quinto usuario, no exigido por el enunciado: sostiene la puja ganadora de la
+        // subasta "vencida con ganador" sin contradecir la descripción de comprador1
+        // (que ya tiene su retenido comprometido en la subasta activa) ni la de
+        // comprador2 (descripto con todo su saldo disponible).
+        var comprador3 = new Usuario
+        {
+            Email = "comprador3@test.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(PasswordDePrueba),
+            Nombre = "Comprador Tres",
+            Seudonimo = "comprador3",
+            FechaRegistro = ahora
+        };
+
         var sinFondos = new Usuario
         {
             Email = "sinfondos@test.com",
@@ -77,20 +90,16 @@ public static class DatosSemilla
             FechaRegistro = ahora
         };
 
-        contexto.Usuarios.AddRange(vendedor, comprador1, comprador2, sinFondos);
+        contexto.Usuarios.AddRange(vendedor, comprador1, comprador2, comprador3, sinFondos);
         contexto.SaveChanges(); // ya tenemos los Id de usuario
 
         // ---------- 3. Billeteras ----------
-        // comprador1: Total $150.000 / Retenido $45.000 / Disponible $105.000 (según enunciado).
-        //
-        // comprador2: Total $200.000, SaldoRetenido = 5.500 (no 0).
-        // TODO(pendiente profesor): el enunciado lo describe como "Postor habilitado" con
-        // Disponible = $200.000 (o sea, sin nada retenido), pero acá gana la subasta
-        // "Vencida con ganador" y necesita su puja retenida hasta que el worker la liquide
-        // (Bloque 8). Es una contradicción del propio enunciado -> ya se le consultó al
-        // profesor. Mientras no responda, se deja comprador2 con esta retención y ganando
-        // esa subasta. NO agregar un quinto usuario para esto todavía: eso se evalúa recién
-        // en el Bloque 4 (billetera/ledger), en un commit aparte.
+        // comprador1: Total $150.000 / Retenido $45.000 / Disponible $105.000.
+        // comprador2: Total $200.000 / Retenido $0 / Disponible $200.000 — la puja que
+        // hizo en la subasta activa estándar fue superada por comprador1, así que su
+        // escrow ya se liberó.
+        // comprador3: Total $50.000 / Retenido $5.500 — sostiene la puja ganadora de
+        // la subasta "vencida con ganador".
         var billeteraVendedor = new Billetera
         {
             UsuarioId = vendedor.Id,
@@ -111,6 +120,14 @@ public static class DatosSemilla
         {
             UsuarioId = comprador2.Id,
             SaldoTotal = 200000m,
+            SaldoRetenido = 0m,
+            Version = 1
+        };
+
+        var billeteraComprador3 = new Billetera
+        {
+            UsuarioId = comprador3.Id,
+            SaldoTotal = 50000m,
             SaldoRetenido = 5500m,
             Version = 1
         };
@@ -124,7 +141,8 @@ public static class DatosSemilla
         };
 
         contexto.Billeteras.AddRange(
-            billeteraVendedor, billeteraComprador1, billeteraComprador2, billeteraSinFondos);
+            billeteraVendedor, billeteraComprador1, billeteraComprador2,
+            billeteraComprador3, billeteraSinFondos);
         contexto.SaveChanges();
 
         // ---------- 4. Subastas ----------
@@ -149,18 +167,13 @@ public static class DatosSemilla
         };
 
         // Caso B: Activa crítica -> alerta visual y anti-sniping
-        // NOTA: sigue en la categoría "Indumentaria" (ex "Hogar") por el rename de categorías;
-        // el título/descripción del ítem (sillones de living) ya no encaja semánticamente con
-        // esa categoría. El enunciado solo pide el rename de la categoría, no reasignar qué
-        // ítem va en cuál — si querés que el contenido tenga sentido, cambiá este ítem por
-        // algo de indumentaria (ej. "Campera de cuero") o movelo a otra categoría.
         var subastaActivaCritica = new Subasta
         {
             VendedorId = vendedor.Id,
             CategoriaId = indumentaria.Id,
-            Titulo = "Set de sillones de living",
-            Descripcion = "Juego de living de 3 cuerpos, buen estado.",
-            UrlImagen = "https://picsum.photos/seed/sillones/600/400",
+            Titulo = "Campera de cuero",
+            Descripcion = "Campera de cuero negra, talle M, poco uso.",
+            UrlImagen = "https://picsum.photos/seed/campera/600/400",
             PrecioBase = 20000m,
             IncrementoMinimo = 500m,
             PujaActual = 20000m,
@@ -202,7 +215,7 @@ public static class DatosSemilla
             PrecioBase = 5000m,
             IncrementoMinimo = 200m,
             PujaActual = 5500m,
-            LiderId = comprador2.Id,
+            LiderId = comprador3.Id,
             FechaInicio = ahora.AddHours(-2),
             FechaFin = ahora.AddMinutes(-5),
             Estado = EstadoSubasta.Activa, // el worker todavía no la cerró
@@ -256,7 +269,7 @@ public static class DatosSemilla
         var pujaGanadoraVencida = new Puja
         {
             SubastaId = subastaVencidaConGanador.Id,
-            CompradorId = comprador2.Id,
+            CompradorId = comprador3.Id,
             Monto = 5500m,
             FechaPuja = ahora.AddHours(-1)
         };
@@ -266,7 +279,7 @@ public static class DatosSemilla
         // ---------- 6. Asientos del ledger ----------
         // Deposito = cómo entró la plata a la billetera (cuenta para el SaldoTotal).
         // Retencion = por qué una parte está bloqueada ahora mismo (NO afecta el
-        // SaldoTotal, solo explica el SaldoRetenido). Ver nota en el chat.
+        // SaldoTotal, solo explica el SaldoRetenido).
         // Los montos de Deposito de cada usuario se corrigieron para que coincidan
         // 1:1 con el SaldoTotal de su billetera (sección 3.3 del enunciado).
         contexto.AsientosLedger.AddRange(
@@ -299,7 +312,16 @@ public static class DatosSemilla
             },
             new AsientoLedger
             {
-                BilleteraId = billeteraComprador2.Id,
+                BilleteraId = billeteraComprador3.Id,
+                Tipo = TipoAsiento.Deposito,
+                Monto = 50000m,
+                SubastaId = null,
+                Descripcion = "Carga inicial de saldo (seed)",
+                Fecha = ahora.AddDays(-1)
+            },
+            new AsientoLedger
+            {
+                BilleteraId = billeteraComprador3.Id,
                 Tipo = TipoAsiento.Retencion,
                 Monto = 5500m,
                 SubastaId = subastaVencidaConGanador.Id,
