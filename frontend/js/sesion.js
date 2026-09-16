@@ -25,17 +25,6 @@ function cerrarSesion() {
     window.location.href = 'login.html';
 }
 
-// Un token vencido sigue guardado y hace que cada llamada devuelva 401 sin que el
-// usuario entienda por que. Ante el primer 401 se limpia la sesion y se manda al login.
-function manejarSesionVencida(error) {
-    if (error instanceof ErrorApi && error.status === 401 && haySesion()) {
-        borrarSesion();
-        window.location.replace('login.html?vencida=1');
-        return true;
-    }
-    return false;
-}
-
 // Muestra los enlaces que corresponden al estado actual. Los elementos se marcan en el
 // HTML con data-sesion="privado" o data-sesion="anonimo".
 function ajustarNavegacion() {

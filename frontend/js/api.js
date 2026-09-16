@@ -12,7 +12,15 @@ function obtenerToken() {
 
 function obtenerUsuario() {
     const crudo = sessionStorage.getItem(CLAVE_USUARIO);
-    return crudo ? JSON.parse(crudo) : null;
+    if (!crudo) return null;
+    try {
+        return JSON.parse(crudo);
+    } catch {
+        // Un valor corrupto haria fallar cualquier pantalla que lea el usuario.
+        // Se descarta la sesion en vez de dejar la aplicacion rota.
+        borrarSesion();
+        return null;
+    }
 }
 
 function guardarSesion(sesion) {
@@ -69,6 +77,15 @@ async function llamarApi(ruta, opciones = {}) {
     // error mas comun al usar fetch y aca importa, porque el manejo del 409 depende
     // de que estas respuestas lleguen al catch de la pantalla.
     if (!respuesta.ok) {
+        // Un 401 teniendo token guardado significa que el token vencio o dejo de ser
+        // valido. Se resuelve aca, que es el unico punto por donde pasan todas las
+        // respuestas: si cada pantalla tuviera que acordarse de mirarlo, la primera que
+        // se olvide deja al usuario con errores que no puede entender ni resolver.
+        if (respuesta.status === 401 && obtenerToken()) {
+            borrarSesion();
+            window.location.replace('login.html?vencida=1');
+        }
+
         const cuerpo = await leerCuerpo(respuesta);
         throw new ErrorApi(respuesta.status, mensajeDeError(respuesta.status, cuerpo), cuerpo);
     }
@@ -79,7 +96,6 @@ async function llamarApi(ruta, opciones = {}) {
 }
 
 async function leerCuerpo(respuesta) {
-    if (respuesta.status === 204) return null;
     const texto = await respuesta.text();
     if (!texto) return null;
     try {
@@ -106,9 +122,9 @@ function mensajeDeError(status, cuerpo) {
     return 'Ocurrio un error inesperado.';
 }
 
+// La API expone solo lecturas y altas: no hay ningun endpoint PUT ni DELETE, asi que
+// tampoco se agregan helpers para verbos que nadie usa.
 const api = {
     get: (ruta) => llamarApi(ruta),
-    post: (ruta, cuerpo) => llamarApi(ruta, { method: 'POST', body: JSON.stringify(cuerpo) }),
-    put: (ruta, cuerpo) => llamarApi(ruta, { method: 'PUT', body: JSON.stringify(cuerpo) }),
-    delete: (ruta) => llamarApi(ruta, { method: 'DELETE' })
+    post: (ruta, cuerpo) => llamarApi(ruta, { method: 'POST', body: JSON.stringify(cuerpo) })
 };
