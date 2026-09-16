@@ -20,13 +20,15 @@
             <div class="collapse navbar-collapse" id="navbarPrincipal">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="index.html">Catálogo</a></li>
-                    <li class="nav-item"><a class="nav-link" href="publicar.html">Publicar</a></li>
-                    <li class="nav-item"><a class="nav-link" href="billetera.html">Billetera</a></li>
-                    <li class="nav-item"><a class="nav-link" href="mis-actividades.html">Mis actividades</a></li>
+                    <li class="nav-item" data-sesion="privado" hidden><a class="nav-link" href="publicar.html">Publicar</a></li>
+                    <li class="nav-item" data-sesion="privado" hidden><a class="nav-link" href="billetera.html">Billetera</a></li>
+                    <li class="nav-item" data-sesion="privado" hidden><a class="nav-link" href="mis-actividades.html">Mis actividades</a></li>
                 </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item"><a class="nav-link" href="login.html">Ingresar</a></li>
-                    <li class="nav-item"><a class="nav-link" href="registro.html">Crear cuenta</a></li>
+                <ul class="navbar-nav align-items-lg-center gap-lg-2">
+                    <li class="nav-item" data-sesion="anonimo"><a class="nav-link" href="login.html">Ingresar</a></li>
+                    <li class="nav-item" data-sesion="anonimo"><a class="nav-link" href="registro.html">Crear cuenta</a></li>
+                    <li class="nav-item" data-sesion="privado" hidden><span class="navbar-text" id="usuario-actual"></span></li>
+                    <li class="nav-item" data-sesion="privado" hidden><button class="btn btn-sm btn-outline-light" type="button" id="boton-cerrar-sesion">Cerrar sesión</button></li>
                 </ul>
             </div>
         </div>
@@ -40,5 +42,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/sesion.js"></script>
 </body>
 </html>
