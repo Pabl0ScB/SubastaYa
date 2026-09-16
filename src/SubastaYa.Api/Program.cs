@@ -56,6 +56,7 @@ builder.Services.AddScoped<IServicioDeUsuarios, ServicioDeUsuarios>();
 builder.Services.AddScoped<IServicioDeAutenticacion, ServicioDeAutenticacion>();
 builder.Services.AddScoped<IServicioDeSubastas, ServicioDeSubastas>();
 builder.Services.AddScoped<IAsientoLedgerRepository, AsientoLedgerRepository>();
+builder.Services.AddScoped<IServicioDeBilleteras, ServicioDeBilleteras>();
 
 // Controllers y documentacion de la API
 builder.Services.AddControllers();
