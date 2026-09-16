@@ -1,4 +1,10 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using SubastaYa.Api.Middleware;
+using SubastaYa.Api.Servicios;
 using SubastaYa.Infrastructure.Persistencia;
 using SubastaYa.Infrastructure.Seed;
 
@@ -9,10 +15,69 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
+// Autenticacion por JWT. El servidor no guarda sesiones: confia en el token porque
+// puede recalcular su firma con la clave secreta, que vive en user-secrets y nunca en
+// appsettings porque quien la tenga puede hacerse pasar por cualquier usuario.
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(opciones =>
+    {
+        opciones.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Clave"]!)),
+
+            // Por defecto ASP.NET tolera 5 minutos de gracia sobre la expiracion.
+            // Aca no hay varios servidores con relojes desincronizados, asi que la
+            // expiracion es exacta.
+            ClockSkew = TimeSpan.Zero
+        };
+
+        // Sin esto, ASP.NET renombra los claims estandar a URIs largas heredadas de
+        // WS-Federation y "sub" dejaria de leerse por su nombre.
+        opciones.MapInboundClaims = false;
+    });
+
+builder.Services.AddAuthorization();
+
+// Servicios de aplicacion, Scoped igual que el DbContext: todo lo que participa de una
+// misma peticion comparte instancia.
+builder.Services.AddScoped<IServicioDePasswords, ServicioDePasswords>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IServicioDeUsuarios, ServicioDeUsuarios>();
+builder.Services.AddScoped<IServicioDeAutenticacion, ServicioDeAutenticacion>();
+builder.Services.AddScoped<IServicioDeSubastas, ServicioDeSubastas>();
+
 // Controllers y documentacion de la API
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddSwaggerGen(opciones =>
+{
+    // Habilita el boton "Authorize" de Swagger para pegar el token a mano.
+    opciones.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Pegar solamente el token, sin escribir 'Bearer' adelante."
+    });
+
+    // En Microsoft.OpenApi v2 las referencias se resuelven contra el documento, por eso
+    // el requirement se construye dentro de una funcion que lo recibe.
+    opciones.AddSecurityRequirement(documento => new OpenApiSecurityRequirement
+    {
+        { new OpenApiSecuritySchemeReference("Bearer", documento), new List<string>() }
+    });
+});
 
 // CORS: el frontend corre en otro puerto (Live Server) y necesita permiso explicito
 builder.Services.AddCors(opt => opt.AddPolicy("Frontend", p =>
@@ -22,16 +87,23 @@ builder.Services.AddCors(opt => opt.AddPolicy("Frontend", p =>
 
 var app = builder.Build();
 
+// Va primero: para atrapar una excepcion tiene que envolver a todo lo que sigue.
+app.UseMiddleware<ManejadorDeExcepcionesMiddleware>();
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseCors("Frontend");
 
+// El orden importa: UseAuthentication averigua quien es el usuario y UseAuthorization
+// decide si puede acceder. Invertidos, [Authorize] evaluaria sobre un usuario aun sin
+// identificar y rechazaria todo con 401.
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
 app.Services.AplicarDatosSemilla();
 app.Run();
 
-// ¡¡¡PENDIENTE!!!1!! todavia no corresponde:
-// - AddAuthentication + AddJwtBearer, UseAuthentication/UseAuthorization -> Tarea 2.1 
-// - Registrar IAsientoLedgerRepository/IRegistroAuditoriaRepository -> Tareas 3.4 y 4.4)
-// - UseMiddleware<ManejadorDeExcepcionesMiddleware> -> Tarea 7.1 (jeje)
+// Pendiente: registrar IAsientoLedgerRepository e IRegistroAuditoriaRepository
+// cuando esten escritas sus implementaciones.
