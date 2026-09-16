@@ -5,7 +5,9 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using SubastaYa.Api.Middleware;
 using SubastaYa.Api.Servicios;
+using SubastaYa.Domain.Repositorios;
 using SubastaYa.Infrastructure.Persistencia;
+using SubastaYa.Infrastructure.Repositorios;
 using SubastaYa.Infrastructure.Seed;
 
 
@@ -53,6 +55,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IServicioDeUsuarios, ServicioDeUsuarios>();
 builder.Services.AddScoped<IServicioDeAutenticacion, ServicioDeAutenticacion>();
 builder.Services.AddScoped<IServicioDeSubastas, ServicioDeSubastas>();
+builder.Services.AddScoped<IAsientoLedgerRepository, AsientoLedgerRepository>();
 
 // Controllers y documentacion de la API
 builder.Services.AddControllers();
