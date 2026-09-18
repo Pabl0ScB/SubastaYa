@@ -7,7 +7,8 @@ using SubastaYa.Api.Middleware;
 using SubastaYa.Api.Servicios;
 using SubastaYa.Infrastructure.Persistencia;
 using SubastaYa.Infrastructure.Seed;
-
+using SubastaYa.Domain.Repositorios;
+using SubastaYa.Infrastructure.Repositorios;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,7 +54,8 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IServicioDeUsuarios, ServicioDeUsuarios>();
 builder.Services.AddScoped<IServicioDeAutenticacion, ServicioDeAutenticacion>();
 builder.Services.AddScoped<IServicioDeSubastas, ServicioDeSubastas>();
-
+builder.Services.AddScoped<IRegistroAuditoriaRepository, RegistroAuditoriaRepository>();
+builder.Services.AddScoped<IServicioDeAuditoria, ServicioDeAuditoria>();
 // Controllers y documentacion de la API
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -105,5 +107,4 @@ app.MapControllers();
 app.Services.AplicarDatosSemilla();
 app.Run();
 
-// Pendiente: registrar IAsientoLedgerRepository e IRegistroAuditoriaRepository
-// cuando esten escritas sus implementaciones.
+// Pendiente: registrar IAsientoLedgerRepository cuando este escrita su implementacion.
