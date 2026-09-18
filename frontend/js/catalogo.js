@@ -6,6 +6,8 @@ const filtros = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    conectarFiltros();
+    cargarCategorias();
     cargarCatalogo();
 });
 
@@ -15,6 +17,15 @@ function mostrarEstado(estado) {
     document.getElementById('vacio-catalogo').hidden      = estado !== 'vacio';
     document.getElementById('paginacion-catalogo').hidden = estado !== 'exito';
     if (estado !== 'error') ocultarAlerta('alerta-catalogo');
+
+    if (estado === 'vacio') {
+        const hayFiltros = ['estado','categoriaId','precioMin','precioMax']
+            .some(clave => filtros[clave] !== '');
+
+        document.querySelector('#vacio-catalogo p').textContent = hayFiltros
+            ? 'No hay subastas que coincidan con el filtro.'
+            : 'No hay subastas publicadas todavía.';
+    }
 }
 
 async function cargarCatalogo() {
@@ -113,3 +124,50 @@ document.getElementById('pagina-anterior').addEventListener('click', () => {
 document.getElementById('pagina-siguiente').addEventListener('click', () => {
     filtros.pagina++; cargarCatalogo();
 });
+function conectarFiltros() {
+    const controles = {
+        'filtro-estado': 'estado',
+        'filtro-categoria': 'categoriaId',
+        'filtro-precio-min': 'precioMin',
+        'filtro-precio-max': 'precioMax',
+        'filtro-orden': 'orden'
+    };
+
+    Object.entries(controles).forEach(([id, clave]) => {
+        document.getElementById(id).addEventListener('change', evento => {
+            filtros[clave] = evento.target.value;
+            aplicarFiltros();
+        });
+    });
+
+    document.getElementById('limpiar-filtros').addEventListener('click', () => {
+        document.getElementById('filtros-catalogo').reset();
+        Object.keys(controles).forEach(id => { filtros[controles[id]] = ''; });
+        aplicarFiltros();
+    });
+}
+
+function aplicarFiltros() {
+    // Cualquier cambio de filtro vuelve a la pagina 1. Sin esto, alguien parado en la
+    // pagina 3 que filtra por una categoria con dos resultados ve el estado vacio sobre
+    // un filtro que si tiene resultados. Es el bug mas comun de esta pantalla.
+    filtros.pagina = 1;
+    cargarCatalogo();
+}
+
+async function cargarCategorias() {
+    try {
+        const categorias = await api.get('/categories');
+        const select = document.getElementById('filtro-categoria');
+
+        categorias.forEach(categoria => {
+            const opcion = document.createElement('option');
+            opcion.value = categoria.id;
+            opcion.textContent = categoria.nombre;
+            select.appendChild(opcion);
+        });
+    } catch {
+        // Que falle el desplegable no tiene que impedir ver el catalogo: se deja solo
+        // la opcion "Todas" y la pantalla sigue siendo usable.
+    }
+}

@@ -41,8 +41,51 @@
 
     <main class="container py-4">
         <h1 class="h3 mb-4">Catálogo</h1>
-    
+        <form id="filtros-catalogo" class="row g-2 align-items-end mb-4">
+            <div class="col-12 col-md-3">
+                <label for="filtro-estado" class="form-label">Estado</label>
+                <select class="form-select" id="filtro-estado">
+                    <option value="">Todos</option>
+                    <option value="Activa">Activa</option>
+                    <option value="Programada">Programada</option>
+                    <option value="Finalizada">Finalizada</option>
+                    <option value="Desierta">Desierta</option>
+                </select>
+            </div>
 
+            <div class="col-12 col-md-3">
+                <label for="filtro-categoria" class="form-label">Categoría</label>
+                <select class="form-select" id="filtro-categoria">
+                    <option value="">Todas</option>
+                </select>
+            </div>
+
+            <div class="col-6 col-md-2">
+                <label for="filtro-precio-min" class="form-label">Precio mínimo</label>
+                <input type="number" class="form-control" id="filtro-precio-min" min="0">
+            </div>
+
+            <div class="col-6 col-md-2">
+                <label for="filtro-precio-max" class="form-label">Precio máximo</label>
+                <input type="number" class="form-control" id="filtro-precio-max" min="0">
+            </div>
+
+            <div class="col-12 col-md-2">
+                <label for="filtro-orden" class="form-label">Ordenar por</label>
+                <select class="form-select" id="filtro-orden">
+                    <option value="">Termina antes</option>
+                    <option value="puja">Mayor puja</option>
+                    <option value="reciente">Más recientes</option>
+                </select>
+            </div>
+
+            <div class="col-12">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="limpiar-filtros">
+                    Limpiar filtros
+                </button>
+            </div>
+        </form>
+        
         <div id="alerta-catalogo" class="alert" role="alert" hidden></div>
 
         <!-- Cargando -->
