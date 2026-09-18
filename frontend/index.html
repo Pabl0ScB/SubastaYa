@@ -41,9 +41,37 @@
 
     <main class="container py-4">
         <h1 class="h3 mb-4">Catálogo</h1>
+    
+
+        <div id="alerta-catalogo" class="alert" role="alert" hidden></div>
+
+        <!-- Cargando -->
+        <div id="cargando-catalogo" class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando…</span>
+            </div>
+        </div>
+
+        <!-- Vacío -->
+        <div id="vacio-catalogo" class="text-center py-5 text-muted" hidden>
+            <p class="mb-2">No hay subastas publicadas todavía.</p>
+        </div>
+
+        <!-- Éxito -->
+        <div id="grilla-catalogo" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" hidden></div>
+
+        <nav id="paginacion-catalogo" class="mt-4" hidden>
+            <ul class="pagination justify-content-center mb-0">
+                <li class="page-item"><button class="page-link" id="pagina-anterior" type="button">Anterior</button></li>
+                <li class="page-item disabled"><span class="page-link" id="pagina-actual"></span></li>
+                <li class="page-item"><button class="page-link" id="pagina-siguiente" type="button">Siguiente</button></li>
+            </ul>
+        </nav>
 
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/contador.js"></script>
+    <script src="js/catalogo.js"></script>
 </body>
 </html>
