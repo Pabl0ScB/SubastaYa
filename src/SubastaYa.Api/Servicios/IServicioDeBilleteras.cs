@@ -9,4 +9,10 @@ public interface IServicioDeBilleteras
     /// si no la tiene.
     /// </summary>
     Task<BilleteraResponse> ObtenerPorUsuarioAsync(int usuarioId);
+
+    /// <summary>
+    /// Acredita el monto en la billetera del usuario y devuelve los saldos resultantes.
+    /// Lanza ConflictoDeConcurrenciaException si la billetera cambio mientras se procesaba.
+    /// </summary>
+    Task<BilleteraResponse> DepositarAsync(int usuarioId, decimal monto);
 }
