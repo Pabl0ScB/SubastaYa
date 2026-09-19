@@ -289,7 +289,7 @@ public static class DatosSemilla
                 Tipo = TipoAsiento.Deposito,
                 Monto = 150000m,
                 SubastaId = null,
-                Descripcion = "Carga inicial de saldo (seed)",
+                Descripcion = "Carga inicial de saldo",
                 Fecha = ahora.AddDays(-1)
             },
             new AsientoLedger
@@ -307,8 +307,30 @@ public static class DatosSemilla
                 Tipo = TipoAsiento.Deposito,
                 Monto = 200000m,
                 SubastaId = null,
-                Descripcion = "Carga inicial de saldo (seed)",
+                Descripcion = "Carga inicial de saldo",
                 Fecha = ahora.AddDays(-1)
+            },
+            // comprador2 hizo la primera de las dos ofertas previas y comprador1 la supero.
+            // Su plata se retuvo y despues se libero: por eso hoy no tiene nada retenido,
+            // como pide el enunciado. Los dos asientos se anulan entre si, asi que no
+            // cambian ninguno de sus saldos; solo dejan el rastro de esa oferta.
+            new AsientoLedger
+            {
+                BilleteraId = billeteraComprador2.Id,
+                Tipo = TipoAsiento.Retencion,
+                Monto = 42000m,
+                SubastaId = subastaActivaEstandar.Id,
+                Descripcion = "Retención por ser líder de la subasta",
+                Fecha = pujaPreviaComprador2.FechaPuja
+            },
+            new AsientoLedger
+            {
+                BilleteraId = billeteraComprador2.Id,
+                Tipo = TipoAsiento.Liberacion,
+                Monto = 42000m,
+                SubastaId = subastaActivaEstandar.Id,
+                Descripcion = "Liberación por oferta superada",
+                Fecha = pujaLiderComprador1.FechaPuja
             },
             new AsientoLedger
             {
@@ -316,7 +338,7 @@ public static class DatosSemilla
                 Tipo = TipoAsiento.Deposito,
                 Monto = 50000m,
                 SubastaId = null,
-                Descripcion = "Carga inicial de saldo (seed)",
+                Descripcion = "Carga inicial de saldo",
                 Fecha = ahora.AddDays(-1)
             },
             new AsientoLedger
@@ -334,7 +356,7 @@ public static class DatosSemilla
                 Tipo = TipoAsiento.Deposito,
                 Monto = 500m,
                 SubastaId = null,
-                Descripcion = "Carga inicial de saldo (seed)",
+                Descripcion = "Carga inicial de saldo",
                 Fecha = ahora.AddDays(-1)
             }
         );
