@@ -108,13 +108,19 @@ public class ServicioDeSubastas : IServicioDeSubastas
                 $"No existe una categoría con id {request.CategoriaId}.");
         }
 
-        if (request.FechaFin <= request.FechaInicio)
+        // Se normaliza a UTC antes de cualquier comparacion: comparar un DateTime sin
+        // Kind definido contra DateTime.UtcNow da un resultado que depende de la zona
+        // horaria del servidor, no del valor real que mando el cliente.
+        var fechaInicio = AUtc(request.FechaInicio);
+        var fechaFin = AUtc(request.FechaFin);
+
+        if (fechaFin <= fechaInicio)
         {
             throw new ReglaDeNegocioException(
                 "La fecha de fin debe ser posterior a la de inicio.");
         }
 
-        if (request.FechaFin <= DateTime.UtcNow)
+        if (fechaFin <= DateTime.UtcNow)
         {
             throw new ReglaDeNegocioException(
                 "La fecha de fin debe ser posterior al momento actual.");
@@ -137,19 +143,19 @@ public class ServicioDeSubastas : IServicioDeSubastas
             IncrementoMinimo = request.IncrementoMinimo,
             PujaActual = request.PrecioBase,
             LiderId = null,
-            FechaInicio = DateTime.SpecifyKind(request.FechaInicio, DateTimeKind.Utc),
-            FechaFin = DateTime.SpecifyKind(request.FechaFin, DateTimeKind.Utc),
-            Estado = request.FechaInicio <= DateTime.UtcNow
+            FechaInicio = fechaInicio,
+            FechaFin = fechaFin,
+            Estado = fechaInicio <= DateTime.UtcNow
                 ? Domain.Enums.EstadoSubasta.Activa
                 : Domain.Enums.EstadoSubasta.Programada,
             Version = 0,
             FechaCreacion = DateTime.UtcNow
-        };
+       };
 
-        _contexto.Subastas.Add(subasta);
-        await _contexto.SaveChangesAsync();
+       _contexto.Subastas.Add(subasta);
+       await _contexto.SaveChangesAsync();
 
-        return await ObtenerDetalleAsync(subasta.Id);
+       return await ObtenerDetalleAsync(subasta.Id);
     }
 
     public async Task<SubastaDetalleResponse> ObtenerDetalleAsync(int id)
@@ -176,4 +182,10 @@ public class ServicioDeSubastas : IServicioDeSubastas
             .FirstOrDefaultAsync()
             ?? throw new RecursoNoEncontradoException("La subasta no existe.");
     }
+    // El [Required] del DTO ya garantiza que value no sea null en este punto; el ! es
+    // seguro. SpecifyKind marca el valor como UTC sin correr el reloj: la fecha que
+    // llega en el JSON ya representa UTC, solo le falta la etiqueta para que Npgsql
+    // la acepte en una columna "timestamp with time zone".
+    private static DateTime AUtc(DateTime? value)
+        => DateTime.SpecifyKind(value!.Value, DateTimeKind.Utc);
 }

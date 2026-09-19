@@ -23,6 +23,6 @@ public class PublicarSubastaRequest
     [Range(0.01, 999999999, ErrorMessage = "El incremento mínimo debe ser mayor a cero.")]
     public decimal IncrementoMinimo { get; set; }
 
-    [Required] public DateTime FechaInicio { get; set; }
-    [Required] public DateTime FechaFin { get; set; }
+    [Required] public DateTime? FechaInicio { get; set; }
+    [Required] public DateTime? FechaFin { get; set; }
 }
