@@ -74,7 +74,7 @@ public class ServicioDeBilleteras : IServicioDeBilleteras
         catch (DbUpdateConcurrencyException)
         {
             throw new ConflictoDeConcurrenciaException(
-                "El saldo cambio mientras se procesaba el deposito. Volve a intentarlo.");
+                "El saldo cambió mientras se procesaba el depósito. Volvé a intentarlo.");
         }
 
         // Dentro de la transaccion a proposito: si el deposito no llega a confirmarse, no

@@ -15,10 +15,10 @@ public class PaginacionRequest
     // La pagina tambien tiene tope: el salto se calcula como (pagina - 1) * tamano en un
     // int, y con una pagina enorme esa cuenta desborda y vuelve a dar negativo. Con este
     // tope y el de tamano, el salto maximo es de unos diez millones de filas.
-    [Range(1, 100000, ErrorMessage = "La pagina debe estar entre 1 y 100000.")]
+    [Range(1, 100000, ErrorMessage = "La página debe estar entre 1 y 100000.")]
     public int Pagina { get; set; } = 1;
 
     // El tope evita ademas que una sola peticion se traiga la tabla entera.
-    [Range(1, 100, ErrorMessage = "El tamano de pagina debe estar entre 1 y 100.")]
+    [Range(1, 100, ErrorMessage = "El tamaño de página debe estar entre 1 y 100.")]
     public int Tamano { get; set; } = 10;
 }
