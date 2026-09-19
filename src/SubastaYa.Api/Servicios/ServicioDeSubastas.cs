@@ -104,7 +104,7 @@ public class ServicioDeSubastas : IServicioDeSubastas
 
         if (!categoriaExiste)
         {
-            throw new RecursoNoEncontradoException(
+            throw new ReglaDeNegocioException(
                 $"No existe una categoría con id {request.CategoriaId}.");
         }
 
