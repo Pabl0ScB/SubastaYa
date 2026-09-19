@@ -160,7 +160,7 @@ public static class DatosSemilla
             PujaActual = 45000m,
             LiderId = comprador1.Id,
             FechaInicio = ahora.AddHours(-1),
-            FechaFin = ahora.AddDays(2),
+            FechaFin = ahora.AddMinutes(25),
             Estado = EstadoSubasta.Activa,
             Version = 1,
             FechaCreacion = ahora.AddHours(-1)
@@ -179,7 +179,7 @@ public static class DatosSemilla
             PujaActual = 20000m,
             LiderId = null,
             FechaInicio = ahora.AddMinutes(-10),
-            FechaFin = ahora.AddMinutes(3),
+            FechaFin = ahora.AddSeconds(90),
             Estado = EstadoSubasta.Activa,
             Version = 1,
             FechaCreacion = ahora.AddMinutes(-10)
