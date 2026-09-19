@@ -3,6 +3,7 @@ using SubastaYa.Api.DTOs.Entrada;
 using SubastaYa.Domain.Entidades;
 using SubastaYa.Infrastructure.Persistencia;
 using SubastaYa.Domain.Excepciones;
+using SubastaYa.Api.DTOs.Salida;
 
 namespace SubastaYa.Api.Servicios;
 
@@ -10,6 +11,7 @@ public interface IServicioDeSubastas
 {
     IQueryable<Subasta> ConstruirConsultaCatalogo(FiltroSubastasRequest filtro);
     Task<Subasta> PublicarAsync(PublicarSubastaRequest request, int vendedorId);
+    Task<SubastaDetalleResponse> ObtenerDetalleAsync(int id);
 }
 
 public class ServicioDeSubastas : IServicioDeSubastas
@@ -105,12 +107,12 @@ public class ServicioDeSubastas : IServicioDeSubastas
             IncrementoMinimo = request.IncrementoMinimo,
             PujaActual = request.PrecioBase,
             LiderId = null,
-            FechaInicio = request.FechaInicio,
-            FechaFin = request.FechaFin,
+            FechaInicio = DateTime.SpecifyKind(request.FechaInicio, DateTimeKind.Utc),
+            FechaFin = DateTime.SpecifyKind(request.FechaFin, DateTimeKind.Utc),
             Estado = request.FechaInicio <= DateTime.UtcNow
                 ? Domain.Enums.EstadoSubasta.Activa
                 : Domain.Enums.EstadoSubasta.Programada,
-            Version = 1,
+            Version = 0,
             FechaCreacion = DateTime.UtcNow
         };
 
@@ -118,5 +120,29 @@ public class ServicioDeSubastas : IServicioDeSubastas
         await _contexto.SaveChangesAsync();
 
         return subasta;
+    }
+    public async Task<SubastaDetalleResponse> ObtenerDetalleAsync(int id)
+    {
+        return await _contexto.Subastas
+            .AsNoTracking()
+            .Where(s => s.Id == id)
+            .Select(s => new SubastaDetalleResponse
+            {
+                Id = s.Id,
+                Titulo = s.Titulo,
+                Descripcion = s.Descripcion,
+                UrlImagen = s.UrlImagen,
+                NombreCategoria = s.Categoria.Nombre,
+                PrecioBase = s.PrecioBase,
+                IncrementoMinimo = s.IncrementoMinimo,
+                PujaActual = s.PujaActual,
+                CantidadOfertas = s.Pujas.Count,
+                FechaFin = s.FechaFin,
+                Estado = s.Estado.ToString(),
+                SeudonimoVendedor = "Vendedor #" + s.VendedorId,
+                SeudonimoLider = s.LiderId == null ? null : "Postor #" + s.LiderId
+            })
+            .FirstOrDefaultAsync()
+            ?? throw new RecursoNoEncontradoException("La subasta no existe.");
     }
 }
