@@ -1,13 +1,23 @@
 // Billetera: saldos, carga de saldo simulada e historial de movimientos.
 
-// Cada tipo de asiento con el nombre que ve el usuario y el sentido en que mueve su
-// dinero. La retencion resta porque deja de estar disponible; la liberacion la devuelve.
+// Cada tipo de asiento con el nombre que ve el usuario y su efecto sobre el saldo total,
+// con el mismo criterio que usa el backend para reconstruir ese saldo desde el ledger:
+// deposito y cobro suman, pago resta, y retencion y liberacion no lo cambian porque solo
+// pasan dinero entre disponible y retenido. Si la retencion se mostrara como resta, al
+// ganar una subasta el mismo dinero apareceria descontado dos veces: al retenerse y al
+// pagarse. El nombre es corto porque el motivo ya lo dice la descripcion del asiento.
 const TIPOS_MOVIMIENTO = {
-    Deposito:   { nombre: 'Depósito',                signo: '+' },
-    Retencion:  { nombre: 'Retención por oferta',    signo: '−' },
-    Liberacion: { nombre: 'Liberación',              signo: '+' },
-    Pago:       { nombre: 'Pago de subasta ganada',  signo: '−' },
-    Cobro:      { nombre: 'Cobro por venta',         signo: '+' }
+    Deposito:   { nombre: 'Depósito',                         efecto: 'suma' },
+    Cobro:      { nombre: 'Cobro',                            efecto: 'suma' },
+    Pago:       { nombre: 'Pago',                             efecto: 'resta' },
+    Retencion:  { nombre: 'Retención',                        efecto: 'reserva' },
+    Liberacion: { nombre: 'Liberación',                       efecto: 'reserva' }
+};
+
+const PRESENTACION_EFECTO = {
+    suma:    { signo: '+ ', clase: 'text-success' },
+    resta:   { signo: '− ', clase: 'text-danger' },
+    reserva: { signo: '',   clase: 'text-muted' }
 };
 
 const TAMANO_PAGINA = 10;
@@ -81,7 +91,8 @@ function dibujarMovimientos(pagina, agregar) {
 }
 
 function crearFila(movimiento) {
-    const tipo = TIPOS_MOVIMIENTO[movimiento.tipo] ?? { nombre: movimiento.tipo, signo: '' };
+    const tipo = TIPOS_MOVIMIENTO[movimiento.tipo] ?? { nombre: movimiento.tipo, efecto: 'reserva' };
+    const presentacion = PRESENTACION_EFECTO[tipo.efecto];
     const fila = document.createElement('tr');
 
     const fecha = document.createElement('td');
@@ -106,8 +117,8 @@ function crearFila(movimiento) {
     }
 
     const monto = document.createElement('td');
-    monto.className = `text-end text-nowrap fw-semibold ${tipo.signo === '+' ? 'text-success' : 'text-danger'}`;
-    monto.textContent = `${tipo.signo} ${formatearPesos(movimiento.monto)}`;
+    monto.className = `text-end text-nowrap fw-semibold ${presentacion.clase}`;
+    monto.textContent = presentacion.signo + formatearPesos(movimiento.monto);
 
     fila.append(fecha, nombreTipo, detalle, monto);
     return fila;
