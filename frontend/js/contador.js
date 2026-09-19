@@ -3,6 +3,15 @@
 
 const UN_MINUTO = 60 * 1000;
 const CINCO_MINUTOS = 5 * UN_MINUTO;
+const COLORES = ['contador-normal', 'contador-alerta', 'contador-critico'];
+
+// className reemplazaria todas las clases del elemento, incluida "js-contador" que
+// otras pantallas van a necesitar para encontrarlo despues. classList.remove/add solo
+// tocan las clases de color.
+function pintar(elemento, clase) {
+    elemento.classList.remove(...COLORES);
+    elemento.classList.add(clase);
+}
 
 function actualizarContadores() {
     document.querySelectorAll('[data-fecha-fin]').forEach(elemento => {
@@ -14,15 +23,14 @@ function actualizarContadores() {
 
         if (restante <= 0) {
             elemento.textContent = 'Finalizada';
-            elemento.className = 'contador contador-critico';
+            pintar(elemento, 'contador-critico');
             return;
         }
 
         elemento.textContent = formatear(restante);
-        elemento.className = 'contador ' + (
-            restante <= UN_MINUTO ? 'contador-critico' :
-            restante <= CINCO_MINUTOS ? 'contador-alerta' :
-            'contador-normal');
+        pintar(elemento, restante <= UN_MINUTO ? 'contador-critico' :
+                          restante <= CINCO_MINUTOS ? 'contador-alerta' :
+                          'contador-normal');
     });
 }
 

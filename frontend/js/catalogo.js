@@ -40,8 +40,8 @@ async function cargarCatalogo() {
         }
 
         dibujarGrilla(datos.items);
-        dibujarPaginacion(datos);
         mostrarEstado('exito');
+        dibujarPaginacion(datos);
     } catch (error) {
         mostrarEstado('error');
         mostrarAlerta('alerta-catalogo', error.message);
@@ -77,9 +77,7 @@ function crearTarjeta(subasta) {
             <div class="card-body d-flex flex-column">
                 <span class="badge text-bg-secondary align-self-start mb-2 js-categoria"></span>
                 <h2 class="h6 card-title js-titulo"></h2>
-                <p class="mb-1 small text-muted">
-                    <span class="js-ofertas"></span> ofertas
-                </p>
+                <p class="mb-1 small text-muted js-ofertas"></p>
                 <p class="fs-5 fw-semibold mb-2">$ <span class="js-puja"></span></p>
                 <p class="mb-3"><span class="contador js-contador" data-fecha-fin=""></span></p>
                 <a class="btn btn-primary mt-auto js-detalle">Ver subasta</a>
@@ -88,7 +86,9 @@ function crearTarjeta(subasta) {
 
     columna.querySelector('.js-titulo').textContent    = subasta.titulo;
     columna.querySelector('.js-categoria').textContent = subasta.nombreCategoria;
-    columna.querySelector('.js-ofertas').textContent   = subasta.cantidadOfertas;
+    const cantidadOfertas = subasta.cantidadOfertas;
+    columna.querySelector('.js-ofertas').textContent =
+        cantidadOfertas === 1 ? '1 oferta' : cantidadOfertas === 0 ? 'Sin ofertas' : `${cantidadOfertas} ofertas`;
     columna.querySelector('.js-puja').textContent      = subasta.pujaActual.toLocaleString('es-AR');
 
     const imagen = columna.querySelector('img');
