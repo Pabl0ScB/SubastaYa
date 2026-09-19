@@ -43,11 +43,15 @@
         <h1 class="h3 mb-4">Catálogo</h1>
         <form id="filtros-catalogo" class="row g-2 align-items-end mb-4">
             <div class="col-12 col-md-3">
+                <label for="filtro-busqueda" class="form-label">Buscar</label>
+                <input type="text" class="form-control" id="filtro-busqueda" placeholder="Título de la subasta" maxlength="100">
+            </div>
+            <div class="col-12 col-md-3">
                 <label for="filtro-estado" class="form-label">Estado</label>
                 <select class="form-select" id="filtro-estado">
                     <option value="">Todos</option>
                     <option value="Activa">Activa</option>
-                    <option value="Programada">Programada</option>
+                    <option value="Programada">Próximas</option>
                     <option value="Finalizada">Finalizada</option>
                     <option value="Desierta">Desierta</option>
                 </select>
