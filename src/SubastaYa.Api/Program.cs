@@ -107,4 +107,3 @@ app.MapControllers();
 app.Services.AplicarDatosSemilla();
 app.Run();
 
-// Pendiente: registrar IAsientoLedgerRepository cuando este escrita su implementacion.
