@@ -1,10 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SubastaYa.Api.DTOs.Entrada;
 using SubastaYa.Api.DTOs.Salida;
 using SubastaYa.Api.Servicios;
-using Microsoft.AspNetCore.Authorization;
-using SubastaYa.Domain.Excepciones;
-
 
 namespace SubastaYa.Api.Controllers;
 
@@ -19,20 +17,27 @@ public class SubastasController : ControllerBase
         _servicio = servicio;
     }
 
-     [HttpGet]
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<PaginaResponse<SubastaTarjetaResponse>>> ObtenerCatalogo(
         [FromQuery] FiltroSubastasRequest filtro)
         => Ok(await _servicio.ObtenerCatalogoAsync(filtro));
-    [HttpGet("{id}")]
+
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SubastaDetalleResponse>> ObtenerPorId(int id)
     {
         var respuesta = await _servicio.ObtenerDetalleAsync(id);
         return Ok(respuesta);
     }
 
-    
     [Authorize]
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult<SubastaDetalleResponse>> Publicar(PublicarSubastaRequest request)
     {
         var vendedorId = UsuarioActual.ObtenerId(User);

@@ -17,6 +17,7 @@ public class ServicioDeCategorias : IServicioDeCategorias
     {
         return await _contexto.Categorias
             .AsNoTracking()
+            .OrderBy(c => c.Nombre)
             .Select(c => new CategoriaResponse
             {
                 Id = c.Id,

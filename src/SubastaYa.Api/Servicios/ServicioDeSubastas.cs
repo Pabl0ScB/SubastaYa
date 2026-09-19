@@ -174,6 +174,7 @@ public class ServicioDeSubastas : IServicioDeSubastas
                 IncrementoMinimo = s.IncrementoMinimo,
                 PujaActual = s.PujaActual,
                 CantidadOfertas = s.Pujas.Count,
+                FechaInicio = s.FechaInicio,
                 FechaFin = s.FechaFin,
                 Estado = s.Estado.ToString(),
                 SeudonimoVendedor = "Vendedor #" + s.VendedorId,

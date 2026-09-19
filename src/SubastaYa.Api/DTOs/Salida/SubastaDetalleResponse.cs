@@ -11,6 +11,7 @@ public class SubastaDetalleResponse
     public decimal IncrementoMinimo { get; set; }
     public decimal PujaActual { get; set; }
     public int CantidadOfertas { get; set; }
+    public DateTime FechaInicio { get; set; }
     public DateTime FechaFin { get; set; }
     public string Estado { get; set; } = null!;
     public string SeudonimoVendedor { get; set; } = null!;
