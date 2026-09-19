@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SubastaYa.Api.DTOs.Entrada;
 using SubastaYa.Api.DTOs.Salida;
 using SubastaYa.Domain;
 using SubastaYa.Domain.Entidades;
@@ -62,7 +63,7 @@ public class ServicioDeBilleteras : IServicioDeBilleteras
             BilleteraId = billetera.Id,
             Tipo = TipoAsiento.Deposito,
             Monto = monto,
-            Descripcion = "Deposito manual",
+            Descripcion = "Depósito manual",
             Fecha = DateTime.UtcNow
         });
 
@@ -89,5 +90,24 @@ public class ServicioDeBilleteras : IServicioDeBilleteras
         await transaccion.CommitAsync();
 
         return BilleteraResponse.Desde(billetera);
+    }
+
+    public async Task<PaginaResponse<MovimientoResponse>> ObtenerMovimientosAsync(
+        int usuarioId, PaginacionRequest paginacion)
+    {
+        // Solo el id: la billetera en si no hace falta, y asi la consulta no trae los saldos.
+        var billeteraId = await _contexto.Billeteras
+            .Where(b => b.UsuarioId == usuarioId)
+            .Select(b => (int?)b.Id)
+            .FirstOrDefaultAsync()
+            ?? throw new RecursoNoEncontradoException(SinBilletera);
+
+        var total = await _ledger.ContarPorBilleteraAsync(billeteraId);
+        var asientos = await _ledger.ObtenerPorBilleteraAsync(
+            billeteraId, paginacion.Pagina, paginacion.Tamano);
+
+        return PaginaResponse.Crear(
+            asientos.Select(MovimientoResponse.Desde).ToList(),
+            paginacion.Pagina, paginacion.Tamano, total);
     }
 }
