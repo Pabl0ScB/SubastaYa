@@ -77,7 +77,11 @@ public class ServicioDeSubastas : IServicioDeSubastas
         {
             query = query.Where(s => s.PujaActual <= filtro.PrecioMax.Value);
         }
-
+        
+        if (!string.IsNullOrWhiteSpace(filtro.Busqueda))
+        {
+            query = query.Where(s => EF.Functions.ILike(s.Titulo, $"%{filtro.Busqueda.Trim()}%"));
+        }
         var ahora = DateTime.UtcNow;
 
         query = filtro.Orden switch
