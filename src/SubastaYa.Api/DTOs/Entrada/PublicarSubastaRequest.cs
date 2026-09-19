@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SubastaYa.Api.DTOs.Entrada;
 
-public class PublicarSubastaRequest
+public class PublicarSubastaRequest : IValidatableObject
 {
     [Required(ErrorMessage = "El título es obligatorio.")]
     [MaxLength(120, ErrorMessage = "El título no puede superar los 120 caracteres.")]
@@ -25,4 +25,23 @@ public class PublicarSubastaRequest
 
     [Required] public DateTime? FechaInicio { get; set; }
     [Required] public DateTime? FechaFin { get; set; }
+    
+    // No expresable con Range: un precio con mas de dos decimales no tiene sentido en
+    // pesos, pero ninguna anotacion compara un decimal contra su propio redondeo.
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (decimal.Round(PrecioBase, 2) != PrecioBase)
+        {
+            yield return new ValidationResult(
+                "El precio base no puede tener mas de dos decimales.",
+                new[] { nameof(PrecioBase) });
+        }
+
+        if (decimal.Round(IncrementoMinimo, 2) != IncrementoMinimo)
+        {
+            yield return new ValidationResult(
+                "El incremento minimo no puede tener mas de dos decimales.",
+                new[] { nameof(IncrementoMinimo) });
+        }
+    }
 }
