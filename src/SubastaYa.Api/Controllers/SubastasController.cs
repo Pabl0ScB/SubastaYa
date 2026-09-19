@@ -4,7 +4,7 @@ using SubastaYa.Api.DTOs.Salida;
 using SubastaYa.Api.Servicios;
 using Microsoft.AspNetCore.Authorization;
 using SubastaYa.Domain.Excepciones;
-using SubastaYa.Domain.Entidades;
+
 
 namespace SubastaYa.Api.Controllers;
 
@@ -30,9 +30,10 @@ public class SubastasController : ControllerBase
         return Ok(respuesta);
     }
 
+    
     [Authorize]
     [HttpPost]
-    public async Task<ActionResult<Subasta>> Publicar(PublicarSubastaRequest request)
+    public async Task<ActionResult<SubastaDetalleResponse>> Publicar(PublicarSubastaRequest request)
     {
         var vendedorId = UsuarioActual.ObtenerId(User);
         var subasta = await _servicio.PublicarAsync(request, vendedorId);

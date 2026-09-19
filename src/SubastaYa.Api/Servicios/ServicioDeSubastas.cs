@@ -96,7 +96,7 @@ public class ServicioDeSubastas : IServicioDeSubastas
         return query;
     }
 
-    public async Task<Subasta> PublicarAsync(PublicarSubastaRequest request, int vendedorId)
+    public async Task<SubastaDetalleResponse> PublicarAsync(PublicarSubastaRequest request, int vendedorId)
     {
         var categoriaExiste = await _contexto.Categorias
             .AsNoTracking()
@@ -149,7 +149,7 @@ public class ServicioDeSubastas : IServicioDeSubastas
         _contexto.Subastas.Add(subasta);
         await _contexto.SaveChangesAsync();
 
-        return subasta;
+        return await ObtenerDetalleAsync(subasta.Id);
     }
 
     public async Task<SubastaDetalleResponse> ObtenerDetalleAsync(int id)
