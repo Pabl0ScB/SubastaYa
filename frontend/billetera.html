@@ -43,8 +43,109 @@
     <main class="container py-4">
         <h1 class="h3 mb-4">Mi billetera</h1>
 
+        <div id="alerta-billetera" class="alert" role="alert" hidden></div>
+
+        <!-- Cargando -->
+        <div id="cargando-billetera" class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando…</span>
+            </div>
+        </div>
+
+        <!-- Éxito -->
+        <div id="contenido-billetera" hidden>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <p class="text-muted mb-1">Saldo total</p>
+                            <p class="fs-3 fw-semibold mb-1" id="saldo-total"></p>
+                            <p class="small text-muted mb-0">Todo el dinero cargado en tu cuenta.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <p class="text-muted mb-1">Saldo retenido</p>
+                            <p class="fs-3 fw-semibold mb-1" id="saldo-retenido"></p>
+                            <p class="small text-muted mb-0">Comprometido en subastas que vas liderando.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 border-success">
+                        <div class="card-body">
+                            <p class="text-muted mb-1">Saldo disponible</p>
+                            <p class="fs-3 fw-semibold text-success mb-1" id="saldo-disponible"></p>
+                            <p class="small text-muted mb-0">Lo que podés usar para ofertar.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-12 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h2 class="h5 mb-1">Cargar saldo</h2>
+                            <p class="small text-muted mb-3">Carga simulada: se acredita saldo de prueba, sin ningún cobro real.</p>
+                            <div id="alerta-deposito" class="alert" role="alert" hidden></div>
+                            <form id="formulario-deposito" novalidate>
+                                <label for="monto-deposito" class="form-label">Monto</label>
+                                <div class="input-group has-validation mb-3">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="monto-deposito"
+                                           min="0.01" max="1000000000" step="0.01" required>
+                                    <div class="invalid-feedback" id="error-monto-deposito">
+                                        Ingresá un monto mayor a cero, con hasta dos decimales.
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100" id="boton-depositar">
+                                    <span class="spinner-border spinner-border-sm me-1" id="spinner-depositar" hidden></span>
+                                    Cargar saldo
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h2 class="h5 mb-3">Movimientos</h2>
+
+                            <!-- Vacío -->
+                            <p id="vacio-movimientos" class="text-muted mb-0" hidden>Todavía no tenés movimientos.</p>
+
+                            <div class="table-responsive" id="tabla-movimientos" hidden>
+                                <table class="table align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Fecha</th>
+                                            <th scope="col">Tipo</th>
+                                            <th scope="col">Detalle</th>
+                                            <th scope="col" class="text-end">Monto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cuerpo-movimientos"></tbody>
+                                </table>
+                            </div>
+
+                            <div class="text-center mt-3">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="boton-ver-mas" hidden>
+                                    <span class="spinner-border spinner-border-sm me-1" id="spinner-ver-mas" hidden></span>
+                                    Ver más movimientos
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/billetera.js"></script>
 </body>
 </html>
