@@ -1,7 +1,7 @@
 // Catalogo de subastas: grilla, filtros y paginacion.
 
 const filtros = {
-    estado: '', categoriaId: '', precioMin: '', precioMax: '',
+    busqueda: '', estado: '', categoriaId: '', precioMin: '', precioMax: '',
     orden: '', pagina: 1, tamano: 9
 };
 
@@ -126,6 +126,7 @@ document.getElementById('pagina-siguiente').addEventListener('click', () => {
 });
 function conectarFiltros() {
     const controles = {
+        'filtro-busqueda': 'busqueda',
         'filtro-estado': 'estado',
         'filtro-categoria': 'categoriaId',
         'filtro-precio-min': 'precioMin',

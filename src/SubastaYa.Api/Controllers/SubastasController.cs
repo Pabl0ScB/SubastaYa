@@ -1,5 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using SubastaYa.Api.DTOs.Entrada;
 using SubastaYa.Api.DTOs.Salida;
 using SubastaYa.Api.Servicios;
@@ -18,38 +18,31 @@ public class SubastasController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<PaginaResponse<SubastaTarjetaResponse>>> ObtenerCatalogo(
         [FromQuery] FiltroSubastasRequest filtro)
+        => Ok(await _servicio.ObtenerCatalogoAsync(filtro));
+
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<SubastaDetalleResponse>> ObtenerPorId(int id)
     {
-        var consulta = _servicio.ConstruirConsultaCatalogo(filtro);
-
-        var totalElementos = await consulta.CountAsync();
-
-        var items = await consulta
-            .Skip((filtro.Pagina - 1) * filtro.Tamano)
-            .Take(filtro.Tamano)
-            .Select(s => new SubastaTarjetaResponse
-            {
-                Id = s.Id,
-                Titulo = s.Titulo,
-                UrlImagen = s.UrlImagen,
-                NombreCategoria = s.Categoria.Nombre,
-                PujaActual = s.PujaActual,
-                CantidadOfertas = s.Pujas.Count,
-                FechaFin = s.FechaFin,
-                Estado = s.Estado.ToString()
-            })
-            .ToListAsync();
-
-        var respuesta = new PaginaResponse<SubastaTarjetaResponse>
-        {
-            Items = items,
-            PaginaActual = filtro.Pagina,
-            Tamano = filtro.Tamano,
-            TotalElementos = totalElementos,
-            TotalPaginas = (int)Math.Ceiling(totalElementos / (double)filtro.Tamano)
-        };
-
+        var respuesta = await _servicio.ObtenerDetalleAsync(id);
         return Ok(respuesta);
+    }
+
+    [Authorize]
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<SubastaDetalleResponse>> Publicar(PublicarSubastaRequest request)
+    {
+        var vendedorId = UsuarioActual.ObtenerId(User);
+        var subasta = await _servicio.PublicarAsync(request, vendedorId);
+
+        return CreatedAtAction(nameof(ObtenerPorId), new { id = subasta.Id }, subasta);
     }
 }

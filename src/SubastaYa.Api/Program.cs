@@ -57,6 +57,7 @@ builder.Services.AddScoped<IServicioDeSubastas, ServicioDeSubastas>();
 builder.Services.AddScoped<IAsientoLedgerRepository, AsientoLedgerRepository>();
 builder.Services.AddScoped<IServicioDeBilleteras, ServicioDeBilleteras>();
 builder.Services.AddScoped<IRegistroAuditoriaRepository, RegistroAuditoriaRepository>();
+builder.Services.AddScoped<IServicioDeCategorias, ServicioDeCategorias>();
 builder.Services.AddScoped<IServicioDeAuditoria, ServicioDeAuditoria>();
 
 // Controllers y documentacion de la API

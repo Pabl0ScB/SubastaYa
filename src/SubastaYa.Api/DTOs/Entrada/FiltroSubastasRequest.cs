@@ -13,7 +13,8 @@ public class FiltroSubastasRequest
     public decimal? PrecioMin { get; set; }
     public decimal? PrecioMax { get; set; }
     public string? Orden { get; set; }
-
+    [MaxLength(100)]
+    public string? Busqueda { get; set; }
     // Sin estos rangos, "pagina=0" produce un Skip(-10) que PostgreSQL rechaza con un
     // error no controlado, y "tamano=0" hace que el calculo de TotalPaginas divida por
     // cero. Al ser anotaciones del DTO, [ApiController] responde 400 antes de que el
