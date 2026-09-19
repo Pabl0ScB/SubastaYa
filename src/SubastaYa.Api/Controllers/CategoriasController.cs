@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using SubastaYa.Api.DTOs.Salida;
-using SubastaYa.Infrastructure.Persistencia;
+using SubastaYa.Api.Servicios;
 
 namespace SubastaYa.Api.Controllers;
 
@@ -9,26 +8,14 @@ namespace SubastaYa.Api.Controllers;
 [Route("api/v1/categories")]
 public class CategoriasController : ControllerBase
 {
-    private readonly AppDbContext _contexto;
+    private readonly IServicioDeCategorias _servicio;
 
-    public CategoriasController(AppDbContext contexto)
+    public CategoriasController(IServicioDeCategorias servicio)
     {
-        _contexto = contexto;
+        _servicio = servicio;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CategoriaResponse>>> ObtenerCategorias()
-    {
-        var categorias = await _contexto.Categorias
-            .AsNoTracking()
-            .Select(c => new CategoriaResponse
-            {
-                Id = c.Id,
-                Nombre = c.Nombre,
-                UrlIcono = c.UrlIcono
-            })
-            .ToListAsync();
-
-        return Ok(categorias);
-    }
+        => Ok(await _servicio.ObtenerTodasAsync());
 }
