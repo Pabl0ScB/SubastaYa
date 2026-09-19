@@ -1,18 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using SubastaYa.Api.DTOs.Entrada;
-using SubastaYa.Domain.Entidades;
-using SubastaYa.Infrastructure.Persistencia;
-using SubastaYa.Domain.Excepciones;
 using SubastaYa.Api.DTOs.Salida;
+using SubastaYa.Domain.Entidades;
+using SubastaYa.Domain.Excepciones;
+using SubastaYa.Infrastructure.Persistencia;
 
 namespace SubastaYa.Api.Servicios;
-
-public interface IServicioDeSubastas
-{
-    IQueryable<Subasta> ConstruirConsultaCatalogo(FiltroSubastasRequest filtro);
-    Task<Subasta> PublicarAsync(PublicarSubastaRequest request, int vendedorId);
-    Task<SubastaDetalleResponse> ObtenerDetalleAsync(int id);
-}
 
 public class ServicioDeSubastas : IServicioDeSubastas
 {
@@ -23,11 +16,44 @@ public class ServicioDeSubastas : IServicioDeSubastas
         _contexto = contexto;
     }
 
-    public IQueryable<Subasta> ConstruirConsultaCatalogo(FiltroSubastasRequest filtro)
+    public async Task<PaginaResponse<SubastaTarjetaResponse>> ObtenerCatalogoAsync(
+        FiltroSubastasRequest filtro)
     {
-        // Sin Include: la consulta termina en una proyeccion a DTO en el controlador, y
-        // ante una proyeccion EF Core ignora los Include. El JOIN con Categoria lo genera
-        // el propio Select, que es lo que evita el problema N+1.
+        var consulta = ConstruirConsulta(filtro);
+
+        var totalElementos = await consulta.CountAsync();
+
+        var items = await consulta
+            .Skip((filtro.Pagina - 1) * filtro.Tamano)
+            .Take(filtro.Tamano)
+            .Select(s => new SubastaTarjetaResponse
+            {
+                Id = s.Id,
+                Titulo = s.Titulo,
+                UrlImagen = s.UrlImagen,
+                NombreCategoria = s.Categoria.Nombre,
+                PujaActual = s.PujaActual,
+                CantidadOfertas = s.Pujas.Count,
+                FechaFin = s.FechaFin,
+                Estado = s.Estado.ToString()
+            })
+            .ToListAsync();
+
+        return new PaginaResponse<SubastaTarjetaResponse>
+        {
+            Items = items,
+            PaginaActual = filtro.Pagina,
+            Tamano = filtro.Tamano,
+            TotalElementos = totalElementos,
+            TotalPaginas = (int)Math.Ceiling(totalElementos / (double)filtro.Tamano)
+        };
+    }
+
+    // Sin Include: la consulta termina en una proyeccion a DTO mas arriba, y ante una
+    // proyeccion EF Core ignora el Include. El JOIN con Categoria lo genera el propio
+    // Select, que es lo que evita el problema N+1.
+    private IQueryable<Subasta> ConstruirConsulta(FiltroSubastasRequest filtro)
+    {
         var query = _contexto.Subastas
             .AsNoTracking()
             .AsQueryable();
@@ -52,18 +78,22 @@ public class ServicioDeSubastas : IServicioDeSubastas
             query = query.Where(s => s.PujaActual <= filtro.PrecioMax.Value);
         }
 
+        var ahora = DateTime.UtcNow;
+
         query = filtro.Orden switch
         {
             "puja" => query.OrderByDescending(s => s.PujaActual),
             "reciente" => query.OrderByDescending(s => s.FechaCreacion),
-            _ => query.OrderBy(s => s.FechaFin)
+            // Primero las vigentes, de la que cierra antes a la que cierra despues; las
+            // vencidas van al final, porque no les queda tiempo restante.
+            _ => query.OrderBy(s => s.FechaFin < ahora).ThenBy(s => s.FechaFin)
         };
 
         return query;
     }
+
     public async Task<Subasta> PublicarAsync(PublicarSubastaRequest request, int vendedorId)
     {
-        // 1. La categoria existe (necesita ir a la base, no es expresable como anotacion).
         var categoriaExiste = await _contexto.Categorias
             .AsNoTracking()
             .AnyAsync(c => c.Id == request.CategoriaId);
@@ -74,22 +104,18 @@ public class ServicioDeSubastas : IServicioDeSubastas
                 $"No existe una categoría con id {request.CategoriaId}.");
         }
 
-        // 2. FechaFin tiene que ser posterior a FechaInicio.
         if (request.FechaFin <= request.FechaInicio)
         {
             throw new ReglaDeNegocioException(
                 "La fecha de fin debe ser posterior a la de inicio.");
         }
 
-        // 3. No se puede publicar algo que ya vence.
         if (request.FechaFin <= DateTime.UtcNow)
         {
             throw new ReglaDeNegocioException(
                 "La fecha de fin debe ser posterior al momento actual.");
         }
 
-        // 4. El incremento minimo no puede superar el precio base, o la subasta seria
-        // imposible de pujar desde la primera oferta.
         if (request.IncrementoMinimo > request.PrecioBase)
         {
             throw new ReglaDeNegocioException(
@@ -121,6 +147,7 @@ public class ServicioDeSubastas : IServicioDeSubastas
 
         return subasta;
     }
+
     public async Task<SubastaDetalleResponse> ObtenerDetalleAsync(int id)
     {
         return await _contexto.Subastas
