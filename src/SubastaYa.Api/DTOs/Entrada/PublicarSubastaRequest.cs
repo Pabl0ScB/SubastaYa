@@ -8,13 +8,15 @@ public class PublicarSubastaRequest : IValidatableObject
     [MaxLength(120, ErrorMessage = "El título no puede superar los 120 caracteres.")]
     public string Titulo { get; set; } = string.Empty;
 
-    [Required, MaxLength(2000)]
+    [Required(ErrorMessage = "La descripción es obligatoria.")]
+    [MaxLength(2000, ErrorMessage = "La descripción no puede superar los 2000 caracteres.")]
     public string Descripcion { get; set; } = string.Empty;
 
-    [Required, Url(ErrorMessage = "La imagen debe ser una URL válida.")]
+    [Required(ErrorMessage = "La imagen es obligatoria.")]
+    [Url(ErrorMessage = "La imagen debe ser una URL válida.")]
     public string UrlImagen { get; set; } = string.Empty;
 
-    [Range(1, int.MaxValue)]
+    [Range(1, int.MaxValue, ErrorMessage = "Elegí una categoría.")]
     public int CategoriaId { get; set; }
 
     [Range(0.01, 999999999, ErrorMessage = "El precio base debe ser mayor a cero.")]
@@ -23,8 +25,11 @@ public class PublicarSubastaRequest : IValidatableObject
     [Range(0.01, 999999999, ErrorMessage = "El incremento mínimo debe ser mayor a cero.")]
     public decimal IncrementoMinimo { get; set; }
 
-    [Required] public DateTime? FechaInicio { get; set; }
-    [Required] public DateTime? FechaFin { get; set; }
+    [Required(ErrorMessage = "La fecha de inicio es obligatoria.")]
+    public DateTime? FechaInicio { get; set; }
+
+    [Required(ErrorMessage = "La fecha de fin es obligatoria.")]
+    public DateTime? FechaFin { get; set; }
     
     // No expresable con Range: un precio con mas de dos decimales no tiene sentido en
     // pesos, pero ninguna anotacion compara un decimal contra su propio redondeo.
