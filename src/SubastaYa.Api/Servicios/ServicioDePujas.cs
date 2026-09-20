@@ -1,8 +1,10 @@
 using System.Globalization;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SubastaYa.Api.Configuracion;
 using SubastaYa.Api.DTOs.Salida;
+using SubastaYa.Api.Hubs;
 using SubastaYa.Domain;
 using SubastaYa.Domain.Entidades;
 using SubastaYa.Domain.Enums;
@@ -18,17 +20,23 @@ public class ServicioDePujas : IServicioDePujas
     private readonly IAsientoLedgerRepository _ledger;
     private readonly IServicioDeAuditoria _auditoria;
     private readonly OpcionesAntiSniping _antiSniping;
+    private readonly IHubContext<SubastaHub> _hub;
+    private readonly ILogger<ServicioDePujas> _logger;
 
     public ServicioDePujas(
         AppDbContext contexto,
         IAsientoLedgerRepository ledger,
         IServicioDeAuditoria auditoria,
-        IOptions<OpcionesAntiSniping> antiSniping)
+        IOptions<OpcionesAntiSniping> antiSniping,
+        IHubContext<SubastaHub> hub,
+        ILogger<ServicioDePujas> logger)
     {
         _contexto = contexto;
         _ledger = ledger;
         _auditoria = auditoria;
         _antiSniping = antiSniping.Value;
+        _hub = hub;
+        _logger = logger;
     }
 
     // Dos etapas separadas: primero se rechaza todo lo que no puede ser una oferta valida,
@@ -272,7 +280,7 @@ public class ServicioDePujas : IServicioDePujas
             .Select(u => u.Seudonimo)
             .FirstAsync();
 
-        return new PujaRegistradaResponse
+        var respuesta = new PujaRegistradaResponse
         {
             Id = puja.Id,
             Monto = puja.Monto,
@@ -282,5 +290,20 @@ public class ServicioDePujas : IServicioDePujas
             MontoMinimo = subasta.PujaActual + subasta.IncrementoMinimo,
             TiempoExtendido = tiempoExtendido
         };
+
+        // Despues del commit y fuera del try: si se avisara antes y la transaccion se
+        // deshiciera, todos verian una oferta que no existe. Y un fallo al avisar no puede
+        // convertir en error una oferta que ya quedo guardada: se registra y se sigue.
+        try
+        {
+            await _hub.Clients.Group(SubastaHub.NombreDeGrupo(subasta.Id))
+                .SendAsync("NuevaPuja", respuesta);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "No se pudo avisar la oferta {PujaId} a la sala en vivo.", respuesta.Id);
+        }
+
+        return respuesta;
     }
 }
