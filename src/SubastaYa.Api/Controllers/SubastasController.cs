@@ -45,4 +45,14 @@ public class SubastasController : ControllerBase
 
         return CreatedAtAction(nameof(ObtenerPorId), new { id = subasta.Id }, subasta);
     }
+
+    [Authorize]
+    [HttpGet("~/api/v1/users/me/auctions")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IReadOnlyList<MiPublicacionResponse>>> ObtenerMisPublicaciones()
+    {
+        var vendedorId = UsuarioActual.ObtenerId(User);
+        return Ok(await _servicio.ObtenerMisPublicacionesAsync(vendedorId));
+    }
 }

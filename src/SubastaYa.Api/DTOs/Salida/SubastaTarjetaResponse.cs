@@ -9,6 +9,7 @@ public class SubastaTarjetaResponse
     public string NombreCategoria { get; set; } = null!;
     public decimal PujaActual { get; set; }
     public int CantidadOfertas { get; set; }
+    public DateTime FechaInicio { get; set; }
     public DateTime FechaFin { get; set; }
     public string Estado { get; set; } = null!;
 }
