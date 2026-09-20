@@ -4,14 +4,16 @@
 const CLAVE_TOKEN = 'subastaya.token';
 const CLAVE_USUARIO = 'subastaya.usuario';
 
-// La sesion vive en sessionStorage y no en localStorage: se borra al cerrar la
-// pestana, que es lo razonable para un token de acceso sin renovacion.
+// La sesion vive en localStorage y no en sessionStorage: asi abrir una subasta en una
+// pestana nueva no obliga a iniciar sesion de nuevo. No es un riesgo distinto al de
+// antes: el token sigue venciendo solo, y el 401 de aca abajo borra la sesion y manda
+// al login igual que si hubiera vencido en la pestana original.
 function obtenerToken() {
-    return sessionStorage.getItem(CLAVE_TOKEN);
+    return localStorage.getItem(CLAVE_TOKEN);
 }
 
 function obtenerUsuario() {
-    const crudo = sessionStorage.getItem(CLAVE_USUARIO);
+    const crudo = localStorage.getItem(CLAVE_USUARIO);
     if (!crudo) return null;
     try {
         return JSON.parse(crudo);
@@ -24,13 +26,13 @@ function obtenerUsuario() {
 }
 
 function guardarSesion(sesion) {
-    sessionStorage.setItem(CLAVE_TOKEN, sesion.token);
-    sessionStorage.setItem(CLAVE_USUARIO, JSON.stringify(sesion.usuario));
+    localStorage.setItem(CLAVE_TOKEN, sesion.token);
+    localStorage.setItem(CLAVE_USUARIO, JSON.stringify(sesion.usuario));
 }
 
 function borrarSesion() {
-    sessionStorage.removeItem(CLAVE_TOKEN);
-    sessionStorage.removeItem(CLAVE_USUARIO);
+    localStorage.removeItem(CLAVE_TOKEN);
+    localStorage.removeItem(CLAVE_USUARIO);
 }
 
 // Error con el codigo HTTP y el cuerpo, para que cada pantalla decida que hacer

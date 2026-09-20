@@ -12,7 +12,25 @@ body {
 
 .contador-normal { color: var(--bs-body-color); }
 .contador-alerta { color: var(--bs-warning-text-emphasis); }
-.contador-critico { color: var(--bs-danger-text-emphasis); }
+
+/* En el ultimo minuto, ademas de mas vivo, pulsa suave para que se note sin mirar de
+   cerca. El pulso es solo opacidad, no movimiento ni tamano, y se apaga del todo para
+   quien tiene activada la preferencia de menos animaciones. */
+.contador-critico {
+    color: var(--bs-danger);
+    animation: contador-pulso 1s ease-in-out infinite;
+}
+
+@keyframes contador-pulso {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .contador-critico {
+        animation: none;
+    }
+}
 
 /* Imagen de las tarjetas del catalogo */
 .tarjeta-subasta .foto-subasta {

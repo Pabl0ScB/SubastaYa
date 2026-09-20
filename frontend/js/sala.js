@@ -168,13 +168,15 @@ function actualizarEstadoPostor() {
     badge.hidden = false;
 }
 
+// Mismo aviso flotante que usa puja.js para el arranque: con el nombre de la subasta y
+// la hora nueva, para que sirva igual a quien mira otra pestana o se distrajo un
+// segundo. Dura un poco mas que el de arranque porque cambia una fecha, no solo informa.
 function mostrarExtension(fechaFin) {
-    const aviso = document.getElementById('aviso-extension');
-    aviso.textContent =
-        `Tiempo extendido: una oferta llegó sobre el cierre. Ahora termina a las ${formatearHoraExacta(fechaFin)}.`;
-    aviso.hidden = false;
-    clearTimeout(mostrarExtension.temporizador);
-    mostrarExtension.temporizador = setTimeout(() => { aviso.hidden = true; }, 8000);
+    const titulo = document.getElementById('titulo')?.textContent ?? 'La subasta';
+    mostrarAvisoFlotante(
+        `${titulo}: una oferta llegó sobre el cierre. Ahora termina a las ${formatearHoraExacta(fechaFin)}.`,
+        { tipo: 'warning', icono: '⏱️', duracionMs: 10000 }
+    );
 }
 
 // Al reconectar o cuando el servidor avisa un cierre: se vuelve a pedir el detalle y
