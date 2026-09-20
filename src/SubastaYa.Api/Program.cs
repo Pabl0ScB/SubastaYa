@@ -7,6 +7,7 @@ using SubastaYa.Api.Configuracion;
 using SubastaYa.Api.Hubs;
 using SubastaYa.Api.Middleware;
 using SubastaYa.Api.Servicios;
+using SubastaYa.Api.Workers;
 using SubastaYa.Domain.Repositorios;
 using SubastaYa.Infrastructure.Persistencia;
 using SubastaYa.Infrastructure.Repositorios;
@@ -64,6 +65,13 @@ builder.Services.AddScoped<IServicioDeAuditoria, ServicioDeAuditoria>();
 builder.Services.AddScoped<IServicioDePujas, ServicioDePujas>();
 builder.Services.Configure<OpcionesAntiSniping>(
     builder.Configuration.GetSection(OpcionesAntiSniping.Seccion));
+builder.Services.Configure<OpcionesWorker>(
+    builder.Configuration.GetSection(OpcionesWorker.Seccion));
+
+// El worker corre dentro de la aplicacion y no como un proceso aparte: se levanta con
+// la API, sin nada mas que instalar ni programar en el sistema operativo. Es Singleton,
+// por eso pide sus dependencias Scoped a traves de un scope propio en cada ciclo.
+builder.Services.AddHostedService<AdjudicacionWorker>();
 
 builder.Services.AddSignalR();
 
