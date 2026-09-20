@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using SubastaYa.Api.Configuracion;
+using SubastaYa.Api.Hubs;
 using SubastaYa.Api.Middleware;
 using SubastaYa.Api.Servicios;
 using SubastaYa.Domain.Repositorios;
@@ -64,6 +65,8 @@ builder.Services.AddScoped<IServicioDePujas, ServicioDePujas>();
 builder.Services.Configure<OpcionesAntiSniping>(
     builder.Configuration.GetSection(OpcionesAntiSniping.Seccion));
 
+builder.Services.AddSignalR();
+
 // Controllers y documentacion de la API
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -89,11 +92,14 @@ builder.Services.AddSwaggerGen(opciones =>
     });
 });
 
-// CORS: el frontend corre en otro puerto (Live Server) y necesita permiso explicito
+// CORS: el frontend corre en otro puerto (Live Server) y necesita permiso explicito.
+// AllowCredentials porque SignalR negocia la conexion con credenciales; el navegador
+// solo lo permite si el servidor no usa AllowAnyOrigin, por eso los origenes van listados.
 builder.Services.AddCors(opt => opt.AddPolicy("Frontend", p =>
     p.WithOrigins("http://127.0.0.1:5500", "http://localhost:5500")
      .AllowAnyHeader()
-     .AllowAnyMethod()));
+     .AllowAnyMethod()
+     .AllowCredentials()));
 
 var app = builder.Build();
 
@@ -112,6 +118,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<SubastaHub>("/hubs/subastas");
 app.Services.AplicarDatosSemilla();
 app.Run();
 
