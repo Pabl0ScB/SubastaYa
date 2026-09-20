@@ -4,6 +4,7 @@ let subastaId = null;
 let conexion = null;
 let cerradaPorFin = false;
 let cantidadOfertas = 0;
+let montoMostrado = 0;
 const idsEnHistorial = new Set();
 
 document.addEventListener('subasta:cargada', async evento => {
@@ -11,6 +12,7 @@ document.addEventListener('subasta:cargada', async evento => {
     const primeraVez = subastaId === null;
     subastaId = detalle.id;
     cantidadOfertas = detalle.cantidadOfertas;
+    montoMostrado = detalle.pujaActual;
 
     await cargarHistorial();
 
@@ -108,8 +110,18 @@ function crearFilaVacia(texto = 'Todavía no hay ofertas.') {
 // respuesta al propio POST. Quien oferta recibe las dos: el id evita contarla dos veces.
 function registrarPujaEnSala(puja) {
     if (idsEnHistorial.has(puja.id)) return;
+
+    // Una oferta que llega despues de otra mas alta (por ejemplo, la respuesta al propio
+    // POST cuando el aviso de otra oferta ya llego) no puede pisar lo que se ve: se
+    // vuelve a pedir el estado completo, que ya la incluye en su lugar.
+    if (puja.monto <= montoMostrado) {
+        recargarEstado();
+        return;
+    }
+
     idsEnHistorial.add(puja.id);
     cantidadOfertas++;
+    montoMostrado = puja.monto;
 
     const lista = document.getElementById('historial-pujas');
     lista.querySelector('.js-sin-ofertas')?.remove();
