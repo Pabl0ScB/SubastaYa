@@ -1,10 +1,36 @@
+// Mismos limites que ServicioDeSubastas.PublicarAsync (DuracionMaxima y
+// ToleranciaInicioPasado). El navegador no le puede preguntar el limite al servidor
+// antes de dibujar el calendario, asi que el numero queda escrito en los dos lados: si
+// se cambia uno, hay que cambiar el otro.
+const TOLERANCIA_INICIO_PASADO_MS = 5 * 60 * 1000;
+const DURACION_MAXIMA_MS = 365 * 24 * 60 * 60 * 1000;
+
 document.addEventListener('DOMContentLoaded', () => {
     cargarCategorias();
     configurarVistaPrevia();
+    configurarLimitesDeFecha();
     limitarADosDecimales(document.getElementById('precio-base'));
     limitarADosDecimales(document.getElementById('incremento'));
     configurarEnvio();
 });
+
+// El calendario en gris fuera de rango es una comodidad del navegador: la regla real
+// la aplica el servidor. Sin esto, escribir un ano de mas de cuatro digitos deja el
+// campo invalido pero no lo avisa hasta enviar.
+function configurarLimitesDeFecha() {
+    const inicioMinimo = new Date(Date.now() - TOLERANCIA_INICIO_PASADO_MS);
+    const finMaximo = new Date(Date.now() + DURACION_MAXIMA_MS);
+
+    document.getElementById('fecha-inicio').min = paraInputFecha(inicioMinimo);
+    document.getElementById('fecha-fin').max = paraInputFecha(finMaximo);
+}
+
+// datetime-local espera "YYYY-MM-DDTHH:mm" en hora local, sin zona.
+function paraInputFecha(fecha) {
+    const dos = n => String(n).padStart(2, '0');
+    return `${fecha.getFullYear()}-${dos(fecha.getMonth() + 1)}-${dos(fecha.getDate())}` +
+        `T${dos(fecha.getHours())}:${dos(fecha.getMinutes())}`;
+}
 
 async function cargarCategorias() {
     const select = document.getElementById('categoria');
@@ -61,9 +87,17 @@ function validarCoherencia() {
     marcar('incremento', incremento > precio
         ? 'El incremento no puede superar al precio base.' : '');
 
+    const inicioMinimo = new Date(Date.now() - TOLERANCIA_INICIO_PASADO_MS);
+    marcar('fecha-inicio', inicio < inicioMinimo
+        ? 'La fecha de inicio no puede estar en el pasado.' : '');
+
+    const finMaximo = new Date(Date.now() + DURACION_MAXIMA_MS);
     marcar('fecha-fin', fin <= inicio
         ? 'La fecha de fin tiene que ser posterior a la de inicio.'
-        : fin <= new Date() ? 'La fecha de fin tiene que ser futura.' : '');
+        : fin <= new Date() ? 'La fecha de fin tiene que ser futura.'
+        : fin > finMaximo
+            ? `La fecha de fin no puede superar el ${finMaximo.toLocaleDateString('es-AR')}.`
+            : '');
 }
 
 // Las claves del 400 son los nombres de las propiedades del DTO de C#.
@@ -109,7 +143,9 @@ function mostrarErroresDeCampo(erroresPorCampo) {
 const MENSAJES_DE_NEGOCIO_A_CAMPO = [
     [/no existe una categoría/i, 'categoria'],
     [/incremento mínimo no puede superar/i, 'incremento'],
-    [/fecha de fin debe ser posterior/i, 'fecha-fin']
+    [/fecha de inicio no puede estar en el pasado/i, 'fecha-inicio'],
+    [/fecha de fin debe ser posterior/i, 'fecha-fin'],
+    [/subasta no puede terminar más allá/i, 'fecha-fin']
 ];
 
 function mostrarErrorDeNegocio(mensaje) {
@@ -132,6 +168,10 @@ function configurarEnvio() {
 
         formulario.classList.add('was-validated');
         if (!formulario.checkValidity()) {
+            // Sin esto el envio se corta en silencio: el aviso rojo queda arriba de
+            // todo y el boton al final de un formulario largo, como si la pagina se
+            // hubiera colgado.
+            formulario.querySelector(':invalid')?.focus();
             return;
         }
 

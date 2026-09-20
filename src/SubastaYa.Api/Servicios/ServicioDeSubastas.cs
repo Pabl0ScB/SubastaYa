@@ -10,6 +10,15 @@ namespace SubastaYa.Api.Servicios;
 
 public class ServicioDeSubastas : IServicioDeSubastas
 {
+    // El campo de fecha del navegador acepta anos de mas de cuatro digitos (hasta seis),
+    // asi que sin este tope se puede publicar una subasta que termine en el ano 20266.
+    // Un ano es un margen generoso para cualquier subasta real.
+    private static readonly TimeSpan DuracionMaxima = TimeSpan.FromDays(365);
+
+    // Tolerancia para que "ahora" no rechace a quien tarda unos segundos en completar
+    // el formulario despues de elegir la hora actual como inicio.
+    private static readonly TimeSpan ToleranciaInicioPasado = TimeSpan.FromMinutes(5);
+
     private readonly AppDbContext _contexto;
 
     public ServicioDeSubastas(AppDbContext contexto)
@@ -108,6 +117,12 @@ public class ServicioDeSubastas : IServicioDeSubastas
         var fechaInicio = AUtc(request.FechaInicio!.Value);
         var fechaFin = AUtc(request.FechaFin!.Value);
 
+        if (fechaInicio < ahora - ToleranciaInicioPasado)
+        {
+            throw new ReglaDeNegocioException(
+                "La fecha de inicio no puede estar en el pasado.");
+        }
+
         if (fechaFin <= fechaInicio)
         {
             throw new ReglaDeNegocioException(
@@ -118,6 +133,13 @@ public class ServicioDeSubastas : IServicioDeSubastas
         {
             throw new ReglaDeNegocioException(
                 "La fecha de fin debe ser posterior al momento actual.");
+        }
+
+        if (fechaFin > ahora + DuracionMaxima)
+        {
+            var limite = ahora + DuracionMaxima;
+            throw new ReglaDeNegocioException(
+                $"La subasta no puede terminar más allá del {limite:dd/MM/yyyy}.");
         }
 
         if (request.IncrementoMinimo > request.PrecioBase)
