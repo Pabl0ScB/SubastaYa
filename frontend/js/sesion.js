@@ -45,3 +45,13 @@ function ajustarNavegacion() {
 }
 
 document.addEventListener('DOMContentLoaded', ajustarNavegacion);
+
+// La sesion vive en localStorage, compartido entre pestanas. El evento "storage" avisa
+// a las otras pestanas cuando una de ellas borra el token: sin esto, cerrar sesion en
+// una pestana dejaria a las demas con una sesion que ya no existe hasta que alguien
+// las recargue a mano.
+window.addEventListener('storage', evento => {
+    if (evento.key === CLAVE_TOKEN && evento.newValue === null && !haySesion()) {
+        window.location.href = 'login.html';
+    }
+});
