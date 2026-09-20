@@ -65,3 +65,32 @@ const formatoHoraExacta = new Intl.DateTimeFormat('es-AR', {
 function formatearHoraExacta(fechaIso) {
     return formatoHoraExacta.format(new Date(fechaIso));
 }
+
+// Aviso flotante en una esquina, que se va solo. Comun a los distintos eventos en vivo
+// de una subasta (arranca, se extiende el cierre) para que se vean como parte del mismo
+// sistema en vez de dos avisos sueltos con su propia pinta.
+function mostrarAvisoFlotante(mensaje, { tipo = 'success', icono = null, duracionMs = 8000 } = {}) {
+    const aviso = document.createElement('div');
+    aviso.className =
+        `alert alert-${tipo} shadow-lg position-fixed bottom-0 end-0 m-3 d-flex ` +
+        'align-items-center gap-2 aviso-flotante';
+    // role="status" para que un lector de pantalla lo anuncie sin interrumpir lo que
+    // esta leyendo, a diferencia de role="alert".
+    aviso.setAttribute('role', 'status');
+
+    if (icono) {
+        const spanIcono = document.createElement('span');
+        spanIcono.className = 'fs-4';
+        spanIcono.setAttribute('aria-hidden', 'true');
+        spanIcono.textContent = icono;
+        aviso.appendChild(spanIcono);
+    }
+
+    const texto = document.createElement('span');
+    texto.textContent = mensaje;
+    aviso.appendChild(texto);
+
+    document.body.appendChild(aviso);
+    setTimeout(() => aviso.remove(), duracionMs);
+    return aviso;
+}

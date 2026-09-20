@@ -204,8 +204,8 @@
         }
     }
 
-    // Aviso flotante en una esquina, que se va solo. Se construye aca en vez de dejarlo
-    // escondido en el HTML porque aparece una sola vez en toda la vida de la pantalla.
+    // mostrarAvisoFlotante vive en ui.js: la comparte con el aviso de extension de
+    // tiempo de sala.js, asi los dos se ven como parte del mismo sistema.
     function avisarInicio(situacion) {
         const textos = {
             puede: 'La subasta comenzó: ya podés ofertar.',
@@ -213,14 +213,10 @@
             anonimo: 'La subasta comenzó. Ingresá para ofertar.'
         };
 
-        const aviso = document.createElement('div');
-        aviso.className = 'alert alert-success shadow position-fixed bottom-0 end-0 m-3';
-        // role="status" para que un lector de pantalla lo anuncie sin interrumpir.
-        aviso.setAttribute('role', 'status');
-        aviso.textContent = textos[situacion] ?? 'La subasta comenzó.';
-        document.body.appendChild(aviso);
-
-        setTimeout(() => aviso.remove(), 8000);
+        mostrarAvisoFlotante(textos[situacion] ?? 'La subasta comenzó.', {
+            tipo: 'success',
+            icono: '🔔'
+        });
     }
 
     function mostrarError(texto) {
