@@ -40,10 +40,63 @@
     </nav>
 
     <main class="container py-4">
-        <h1 class="h3 mb-4">Detalle de subasta</h1>
+        <div id="alerta-subasta" class="alert" role="alert" hidden></div>
 
+        <div id="cargando-subasta" class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando…</span>
+            </div>
+        </div>
+
+        <div id="no-encontrada" class="text-center py-5" hidden>
+            <p class="mb-3">Esta subasta no existe o ya no está disponible.</p>
+            <a href="index.html" class="btn btn-outline-primary">Volver al catálogo</a>
+        </div>
+
+        <div id="detalle-subasta" class="row g-4" hidden>
+            <div class="col-lg-7">
+                <div class="foto-subasta rounded">
+                    <img class="foto-subasta__fondo" id="foto-fondo" alt="" aria-hidden="true">
+                    <img class="foto-subasta__frente" id="foto-frente" alt="">
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <span class="badge text-bg-secondary mb-2" id="categoria"></span>
+                <h1 class="h3" id="titulo"></h1>
+                <p class="text-muted small mb-3">Publicada por <span id="vendedor"></span></p>
+
+                <p class="mb-1 text-muted small">Oferta más alta</p>
+                <p class="display-6 fw-semibold mb-1"><span id="puja-actual"></span></p>
+                <p class="small text-muted mb-3">
+                    <span id="ofertas"></span> · Líder: <span id="lider"></span>
+                </p>
+
+                <p class="mb-3"><span id="estado" class="badge"></span>
+                   <span id="tiempo" class="ms-2"></span></p>
+
+                <dl class="row small mb-4">
+                    <dt class="col-6">Precio base</dt><dd class="col-6"><span id="precio-base"></span></dd>
+                    <dt class="col-6">Incremento mínimo</dt><dd class="col-6"><span id="incremento"></span></dd>
+                    <dt class="col-6">Próxima oferta mínima</dt><dd class="col-6"><span id="oferta-minima"></span></dd>
+                </dl>
+
+                <div id="formulario-puja"></div>
+                <div id="estado-conexion" class="small text-muted"></div>
+            </div>
+
+            <div class="col-12">
+                <h2 class="h5">Descripción</h2>
+                <p id="descripcion" class="descripcion-subasta"></p>
+
+                <h2 class="h5 mt-4">Historial de ofertas</h2>
+                <ul id="historial-pujas" class="list-group"></ul>
+            </div>
+        </div>
     </main>
 
+    <script src="js/contador.js"></script>
+    <script src="js/subasta.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
