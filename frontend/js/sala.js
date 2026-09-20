@@ -34,6 +34,7 @@ async function conectar() {
 
     conexion.on('NuevaPuja', puja => registrarPujaEnSala(puja));
     conexion.on('SubastaFinalizada', () => recargarEstado());
+    conexion.on('SubastaActivada', () => recargarEstado());
 
     conexion.onreconnecting(() => mostrarConexion('reconectando'));
     conexion.onreconnected(async () => {

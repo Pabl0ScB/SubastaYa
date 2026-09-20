@@ -13,14 +13,24 @@
     let montoTocado = false;
     // Su oferta acaba de entrar: lo unico que cambia es el texto de la confirmacion.
     let recienOferto = false;
+    // Estado con el que se dibujo la vez anterior, para detectar el arranque en vivo.
+    let estadoAnterior = null;
 
     // El detalle se redibuja cada vez que llega una oferta, se reconecta la sala o el
     // sistema cierra la subasta. Por eso aca no se dibuja de nuevo si la situacion no
     // cambio: redibujar borraria lo que el usuario esta escribiendo y le sacaria el foco.
     document.addEventListener('subasta:cargada', evento => {
+        const arranco = estadoAnterior === 'Programada' && evento.detail.estado === 'Activa';
+        estadoAnterior = evento.detail.estado;
+
         detalle = evento.detail;
         montoMinimo = detalle.pujaActual + detalle.incrementoMinimo;
         dibujar();
+
+        // La subasta arranco mientras la pantalla estaba abierta: el estado ya se
+        // redibujo solo, pero el cambio es facil de no ver si el usuario esta mirando
+        // otra parte de la pagina.
+        if (arranco) avisarInicio(situacionDibujada);
     });
 
     // Aviso de sala.js cuando entra una oferta nueva sin recargar el detalle: alcanza
@@ -192,6 +202,25 @@
         if (Number(campo.value) < montoMinimo) {
             mostrarError(`Otra oferta subió el mínimo a ${formatearPesos(montoMinimo)}.`);
         }
+    }
+
+    // Aviso flotante en una esquina, que se va solo. Se construye aca en vez de dejarlo
+    // escondido en el HTML porque aparece una sola vez en toda la vida de la pantalla.
+    function avisarInicio(situacion) {
+        const textos = {
+            puede: 'La subasta comenzó: ya podés ofertar.',
+            vendedor: 'Tu subasta comenzó: ya puede recibir ofertas.',
+            anonimo: 'La subasta comenzó. Ingresá para ofertar.'
+        };
+
+        const aviso = document.createElement('div');
+        aviso.className = 'alert alert-success shadow position-fixed bottom-0 end-0 m-3';
+        // role="status" para que un lector de pantalla lo anuncie sin interrumpir.
+        aviso.setAttribute('role', 'status');
+        aviso.textContent = textos[situacion] ?? 'La subasta comenzó.';
+        document.body.appendChild(aviso);
+
+        setTimeout(() => aviso.remove(), 8000);
     }
 
     function mostrarError(texto) {

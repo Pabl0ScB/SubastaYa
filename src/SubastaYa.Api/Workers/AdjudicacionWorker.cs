@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SubastaYa.Api.Configuracion;
+using SubastaYa.Api.Hubs;
 using SubastaYa.Api.Servicios;
 using SubastaYa.Domain;
 using SubastaYa.Domain.Entidades;
@@ -24,15 +26,23 @@ public class AdjudicacionWorker : BackgroundService
     // se pide una fabrica de scopes y cada ciclo abre el suyo, como una peticion.
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly OpcionesWorker _opciones;
+
+    // A diferencia del DbContext, el IHubContext se puede inyectar en este worker
+    // singleton: tambien es singleton y no guarda el estado de ninguna conexion. El Hub
+    // en cambio se crea y se descarta con cada llamada, asi que nunca hay una instancia
+    // a la que pedirle que avise algo.
+    private readonly IHubContext<SubastaHub> _hub;
     private readonly ILogger<AdjudicacionWorker> _logger;
 
     public AdjudicacionWorker(
         IServiceScopeFactory scopeFactory,
         IOptions<OpcionesWorker> opciones,
+        IHubContext<SubastaHub> hub,
         ILogger<AdjudicacionWorker> logger)
     {
         _scopeFactory = scopeFactory;
         _opciones = opciones.Value;
+        _hub = hub;
         _logger = logger;
     }
 
@@ -142,6 +152,7 @@ public class AdjudicacionWorker : BackgroundService
         {
             await contexto.SaveChangesAsync(cancelacion);
             _logger.LogInformation("Subasta {SubastaId} activada.", subasta.Id);
+            await AvisarAsync(subasta.Id, "SubastaActivada", cancelacion);
         }
         catch (DbUpdateConcurrencyException)
         {
@@ -251,6 +262,8 @@ public class AdjudicacionWorker : BackgroundService
             _logger.LogInformation(
                 "Subasta {SubastaId} finalizada: {Monto} del usuario {CompradorId} al usuario {VendedorId}.",
                 subasta.Id, monto, compradorId, vendedorId);
+
+            await AvisarAsync(subasta.Id, "SubastaFinalizada", cancelacion);
         }
         catch (DbUpdateConcurrencyException)
         {
@@ -286,11 +299,37 @@ public class AdjudicacionWorker : BackgroundService
             await transaccion.CommitAsync(cancelacion);
 
             _logger.LogInformation("Subasta {SubastaId} declarada desierta.", subasta.Id);
+
+            // Mismo evento que el cierre con ganador, aunque el estado sea otro: el
+            // cliente no decide nada con el nombre, vuelve a pedir el detalle y redibuja
+            // con lo que reciba. Un segundo evento no le aportaria nada.
+            await AvisarAsync(subasta.Id, "SubastaFinalizada", cancelacion);
         }
         catch (DbUpdateConcurrencyException)
         {
             await transaccion.RollbackAsync(cancelacion);
             Descartar(contexto, subasta.Id, "declarar desierta");
+        }
+    }
+
+    /// <summary>
+    /// Avisa a quienes esten mirando la subasta que su estado cambio. Va siempre despues
+    /// del commit: antes, un aviso podria anunciar un cierre que la transaccion termina
+    /// deshaciendo. Y con su propio try/catch, porque la liquidacion ya ocurrio y no se
+    /// puede deshacer por un problema de notificacion: el aviso se pierde, la pantalla se
+    /// corrige sola en la proxima recarga y el ciclo sigue.
+    /// </summary>
+    private async Task AvisarAsync(int subastaId, string evento, CancellationToken cancelacion)
+    {
+        try
+        {
+            await _hub.Clients.Group(SubastaHub.NombreDeGrupo(subastaId))
+                .SendAsync(evento, cancelacion);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "No se pudo avisar {Evento} de la subasta {SubastaId}.",
+                evento, subastaId);
         }
     }
 
