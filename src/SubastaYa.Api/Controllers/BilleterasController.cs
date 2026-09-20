@@ -48,4 +48,17 @@ public class BilleterasController : ControllerBase
         // de la billetera, que es donde se ve el efecto del deposito.
         return CreatedAtAction(nameof(ObtenerActual), billetera);
     }
+
+    /// <summary>Devuelve los movimientos de la billetera, del mas reciente al mas viejo.</summary>
+    [HttpGet("me/entries")]
+    [ProducesResponseType(typeof(PaginaResponse<MovimientoResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PaginaResponse<MovimientoResponse>>> ObtenerMovimientos(
+        [FromQuery] PaginacionRequest paginacion)
+    {
+        var usuarioId = UsuarioActual.ObtenerId(User);
+        return Ok(await _servicio.ObtenerMovimientosAsync(usuarioId, paginacion));
+    }
 }

@@ -76,7 +76,7 @@ public class ManejadorDeExcepcionesMiddleware
             (StatusCodes.Status409Conflict, Mensaje(ex)),
 
         _ => (StatusCodes.Status500InternalServerError,
-              (object)new ErrorResponse("Ocurrio un error inesperado procesando la peticion."))
+              (object)new ErrorResponse("Ocurrió un error inesperado procesando la petición."))
     };
 
     private static object Mensaje(Exception ex) => new ErrorResponse(ex.Message);

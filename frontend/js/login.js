@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Si llego expulsado por un token vencido, se le explica en vez de dejarlo
     // adivinar por que volvio al login.
     if (parametros.get('vencida')) {
-        mostrarAlerta('alerta-login', 'Tu sesion expiro. Volve a ingresar.', 'warning');
+        mostrarAlerta('alerta-login', 'Tu sesión expiró. Volvé a ingresar.', 'warning');
     }
 
     // Ya logueado no tiene sentido ver este formulario.
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Mismo mensaje para email inexistente y para contrasena incorrecta, igual
             // que el backend: distinguirlos permitiria averiguar que cuentas existen.
             const texto = error.status === 401
-                ? 'Email o contrasena incorrectos.'
+                ? 'Email o contraseña incorrectos.'
                 : error.message;
             mostrarAlerta('alerta-login', texto);
         } finally {

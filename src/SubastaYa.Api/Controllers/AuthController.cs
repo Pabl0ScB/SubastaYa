@@ -31,7 +31,7 @@ public class AuthController : ControllerBase
         // Mensaje unico a proposito: distinguir si fallo el email o la contrasena
         // permitiria averiguar que cuentas existen.
         return sesion is null
-            ? Unauthorized(new ErrorResponse("Email o contrasena incorrectos."))
+            ? Unauthorized(new ErrorResponse("Email o contraseña incorrectos."))
             : Ok(sesion);
     }
 }

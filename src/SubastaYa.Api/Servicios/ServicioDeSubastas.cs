@@ -40,14 +40,7 @@ public class ServicioDeSubastas : IServicioDeSubastas
             })
             .ToListAsync();
 
-        return new PaginaResponse<SubastaTarjetaResponse>
-        {
-            Items = items,
-            PaginaActual = filtro.Pagina,
-            Tamano = filtro.Tamano,
-            TotalElementos = totalElementos,
-            TotalPaginas = (int)Math.Ceiling(totalElementos / (double)filtro.Tamano)
-        };
+        return PaginaResponse.Crear(items, filtro.Pagina, filtro.Tamano, totalElementos);
     }
 
     // Sin Include: la consulta termina en una proyeccion a DTO mas arriba, y ante una
