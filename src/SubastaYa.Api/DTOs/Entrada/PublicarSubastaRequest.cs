@@ -14,6 +14,9 @@ public class PublicarSubastaRequest : IValidatableObject
 
     [Required(ErrorMessage = "La imagen es obligatoria.")]
     [Url(ErrorMessage = "La imagen debe ser una URL válida.")]
+    // Mismo tope que la columna: sin este limite, una direccion mas larga llega hasta la
+    // base, que la rechaza al guardar, y el usuario recibe un 500 en vez de este mensaje.
+    [MaxLength(500, ErrorMessage = "La URL de la imagen no puede superar los 500 caracteres.")]
     public string UrlImagen { get; set; } = string.Empty;
 
     [Range(1, int.MaxValue, ErrorMessage = "Elegí una categoría.")]
