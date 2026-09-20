@@ -17,15 +17,16 @@ public class PujasController : ControllerBase
         _servicio = servicio;
     }
 
+    /// <summary>Registra una oferta del usuario autenticado sobre la subasta.</summary>
     [Authorize]
     [HttpPost]
     [ProducesResponseType(typeof(PujaRegistradaResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ConflictoPujaResponse), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult<PujaRegistradaResponse>> Crear(
         int subastaId, CrearPujaRequest request)
     {
@@ -35,9 +36,10 @@ public class PujasController : ControllerBase
         return CreatedAtAction(nameof(ObtenerHistorial), new { subastaId }, puja);
     }
 
+    /// <summary>Devuelve las ofertas de la subasta, de la mas reciente a la mas vieja.</summary>
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<PujaResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IReadOnlyList<PujaResponse>>> ObtenerHistorial(int subastaId)
         => Ok(await _servicio.ObtenerHistorialAsync(subastaId));
 }

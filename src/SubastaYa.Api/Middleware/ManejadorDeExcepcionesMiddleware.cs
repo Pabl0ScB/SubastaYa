@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using SubastaYa.Api.DTOs.Salida;
 using SubastaYa.Domain.Excepciones;
@@ -12,8 +13,11 @@ namespace SubastaYa.Api.Middleware;
 /// </summary>
 public class ManejadorDeExcepcionesMiddleware
 {
+    // Sin el encoder relajado, los mensajes salen con las tildes como codigos
+    // ("registr\u00F3"), distinto de lo que devuelven los controladores. Es seguro porque
+    // la respuesta viaja como application/json y no se inserta como HTML.
     private static readonly JsonSerializerOptions OpcionesJson =
-        new(JsonSerializerDefaults.Web);
+        new(JsonSerializerDefaults.Web) { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     private readonly RequestDelegate _siguiente;
     private readonly ILogger<ManejadorDeExcepcionesMiddleware> _logger;

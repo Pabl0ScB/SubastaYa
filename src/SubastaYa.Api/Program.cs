@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using SubastaYa.Api.Configuracion;
 using SubastaYa.Api.Middleware;
 using SubastaYa.Api.Servicios;
 using SubastaYa.Domain.Repositorios;
@@ -60,6 +61,8 @@ builder.Services.AddScoped<IRegistroAuditoriaRepository, RegistroAuditoriaReposi
 builder.Services.AddScoped<IServicioDeCategorias, ServicioDeCategorias>();
 builder.Services.AddScoped<IServicioDeAuditoria, ServicioDeAuditoria>();
 builder.Services.AddScoped<IServicioDePujas, ServicioDePujas>();
+builder.Services.Configure<OpcionesAntiSniping>(
+    builder.Configuration.GetSection(OpcionesAntiSniping.Seccion));
 
 // Controllers y documentacion de la API
 builder.Services.AddControllers();
