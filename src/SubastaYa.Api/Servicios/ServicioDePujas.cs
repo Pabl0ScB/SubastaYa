@@ -105,12 +105,12 @@ public class ServicioDePujas : IServicioDePujas
         if (monto < montoMinimo)
         {
             await Auditar(subasta.Id, usuarioId, monto, $"El monto no alcanza el minimo de {montoMinimo}.");
-            throw new ReglaDeNegocioException($"La oferta debe ser de al menos ${montoMinimo}.");
+            throw new ReglaDeNegocioException($"La oferta debe ser de al menos {FormatearPesos(montoMinimo)}.");
         }
 
         var billetera = await _contexto.Billeteras
             .FirstOrDefaultAsync(b => b.UsuarioId == usuarioId)
-            ?? throw new InvalidOperationException("El usuario no tiene billetera.");
+            ?? throw new RecursoNoEncontradoException("El usuario no tiene una billetera asociada.");
 
         if (billetera.SaldoDisponible < monto)
         {
@@ -118,11 +118,17 @@ public class ServicioDePujas : IServicioDePujas
                 EntidadesAuditables.Subasta, subasta.Id, AccionesAuditoria.PujaRechazadaSaldo,
                 usuarioId, new { monto, disponible = billetera.SaldoDisponible });
             throw new ReglaDeNegocioException(
-                $"Saldo insuficiente. Disponible: ${billetera.SaldoDisponible}.");
+                $"Saldo insuficiente. Disponible: {FormatearPesos(billetera.SaldoDisponible)}.");
         }
 
         return (subasta, billetera);
     }
+
+    // Montos para los mensajes que lee el usuario: "$ 46.000,50". Cultura fija y no la del
+    // servidor, para que se lean igual en cualquier maquina donde corra la API; y con
+    // centavos, porque un minimo redondeado haria rechazar una oferta que parece valida.
+    private static string FormatearPesos(decimal monto)
+        => monto.ToString("C", CultureInfo.GetCultureInfo("es-AR"));
 
     private Task Auditar(int subastaId, int usuarioId, decimal monto, string motivo)
         => _auditoria.RegistrarAsync(
@@ -249,15 +255,11 @@ public class ServicioDePujas : IServicioDePujas
 
             var montoMinimo = actual.PujaActual + actual.IncrementoMinimo;
 
-            // Cultura fija y no la del servidor: el monto tiene que leerse igual en
-            // cualquier maquina en la que corra la API.
-            var montoMinimoTexto = montoMinimo.ToString("C0", CultureInfo.GetCultureInfo("es-AR"));
-
             throw new ConflictoDeConcurrenciaException(
                 "Otra oferta se registró antes que la tuya.",
                 new ConflictoPujaResponse
                 {
-                    Mensaje = $"Otra oferta se registró antes que la tuya. La oferta mínima ahora es de {montoMinimoTexto}.",
+                    Mensaje = $"Otra oferta se registró antes que la tuya. La oferta mínima ahora es de {FormatearPesos(montoMinimo)}.",
                     PujaActual = actual.PujaActual,
                     MontoMinimo = montoMinimo,
                     FechaFin = actual.FechaFin
