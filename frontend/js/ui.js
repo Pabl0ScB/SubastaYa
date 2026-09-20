@@ -70,6 +70,10 @@ function formatearHoraExacta(fechaIso) {
 // de una subasta (arranca, se extiende el cierre) para que se vean como parte del mismo
 // sistema en vez de dos avisos sueltos con su propia pinta.
 function mostrarAvisoFlotante(mensaje, { tipo = 'success', icono = null, duracionMs = 8000 } = {}) {
+    // Uno por vez: si llega un aviso nuevo mientras el anterior sigue en pantalla, lo
+    // reemplaza en vez de encimarse en la misma esquina.
+    document.querySelector('.aviso-flotante')?.remove();
+
     const aviso = document.createElement('div');
     aviso.className =
         `alert alert-${tipo} shadow-lg position-fixed bottom-0 end-0 m-3 d-flex ` +
