@@ -1,4 +1,7 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using SubastaYa.Api.Configuracion;
 using SubastaYa.Api.DTOs.Salida;
 using SubastaYa.Domain;
 using SubastaYa.Domain.Entidades;
@@ -14,15 +17,18 @@ public class ServicioDePujas : IServicioDePujas
     private readonly AppDbContext _contexto;
     private readonly IAsientoLedgerRepository _ledger;
     private readonly IServicioDeAuditoria _auditoria;
+    private readonly OpcionesAntiSniping _antiSniping;
 
     public ServicioDePujas(
         AppDbContext contexto,
         IAsientoLedgerRepository ledger,
-        IServicioDeAuditoria auditoria)
+        IServicioDeAuditoria auditoria,
+        IOptions<OpcionesAntiSniping> antiSniping)
     {
         _contexto = contexto;
         _ledger = ledger;
         _auditoria = auditoria;
+        _antiSniping = antiSniping.Value;
     }
 
     // Dos etapas separadas: primero se rechaza todo lo que no puede ser una oferta valida,
@@ -123,7 +129,156 @@ public class ServicioDePujas : IServicioDePujas
             EntidadesAuditables.Subasta, subastaId, AccionesAuditoria.PujaRechazadaValidacion,
             usuarioId, new { monto, motivo });
 
-    private Task<PujaRegistradaResponse> EjecutarTransaccionAsync(
+    // La oferta ya paso todas las validaciones. Todo lo que mueve dinero ocurre en una
+    // sola transaccion: si cualquier paso falla no queda saldo retenido sin su puja, ni
+    // una puja sin su asiento, ni dos postores con la misma subasta retenida.
+    private async Task<PujaRegistradaResponse> EjecutarTransaccionAsync(
         Subasta subasta, Billetera billetera, int usuarioId, decimal monto)
-        => throw new NotImplementedException();
+    {
+        await using var transaccion = await _contexto.Database.BeginTransactionAsync();
+
+        var ahora = DateTime.UtcNow;
+        var fechaFinAnterior = subasta.FechaFin;
+        Puja puja;
+        bool tiempoExtendido;
+
+        try
+        {
+            // 1. Liberar la retencion del lider anterior. Su dinero vuelve a estar
+            //    disponible en el mismo instante en que se retiene el del nuevo postor.
+            if (subasta.LiderId is int liderAnteriorId)
+            {
+                var billeteraAnterior = await _contexto.Billeteras
+                    .FirstAsync(b => b.UsuarioId == liderAnteriorId);
+
+                billeteraAnterior.SaldoRetenido -= subasta.PujaActual;
+                billeteraAnterior.Version++;
+
+                await _ledger.AgregarAsync(new AsientoLedger
+                {
+                    BilleteraId = billeteraAnterior.Id,
+                    Tipo = TipoAsiento.Liberacion,
+                    Monto = subasta.PujaActual,
+                    SubastaId = subasta.Id,
+                    Descripcion = "Liberación por oferta superada",
+                    Fecha = ahora
+                });
+            }
+
+            // 2. Retener el monto del nuevo postor. El saldo total no se toca: el dinero
+            //    sigue siendo suyo hasta que la subasta se liquide.
+            billetera.SaldoRetenido += monto;
+            billetera.Version++;
+
+            await _ledger.AgregarAsync(new AsientoLedger
+            {
+                BilleteraId = billetera.Id,
+                Tipo = TipoAsiento.Retencion,
+                Monto = monto,
+                SubastaId = subasta.Id,
+                Descripcion = "Retención por ser líder de la subasta",
+                Fecha = ahora
+            });
+
+            // 3. La puja.
+            puja = new Puja
+            {
+                SubastaId = subasta.Id,
+                CompradorId = usuarioId,
+                Monto = monto,
+                FechaPuja = ahora
+            };
+            _contexto.Pujas.Add(puja);
+
+            // 4. La subasta.
+            subasta.PujaActual = monto;
+            subasta.LiderId = usuarioId;
+
+            // 5. Anti-sniping, en esta misma transaccion: si fuera en un guardado aparte,
+            //    dos ofertas simultaneas podrian extender el cierre dos veces.
+            tiempoExtendido =
+                (subasta.FechaFin - ahora).TotalSeconds <= _antiSniping.UmbralSegundos;
+            if (tiempoExtendido)
+            {
+                subasta.FechaFin = subasta.FechaFin.AddMinutes(_antiSniping.ExtensionMinutos);
+            }
+
+            // EF no incrementa solo un token de concurrencia de tipo int. Sin estos
+            // incrementos el UPDATE ... WHERE Version = @leida siempre coincide y dos
+            // ofertas simultaneas se pisarian sin que nadie lo detecte. Las dos billeteras
+            // ya lo incrementaron mas arriba.
+            subasta.Version++;
+
+            await _contexto.SaveChangesAsync();
+
+            // La auditoria confirma con su propio SaveChanges sobre este mismo contexto.
+            // Por eso va despues del guardado principal: antes, ese SaveChanges escribiria
+            // tambien la puja y los saldos. Sigue dentro de la transaccion, asi que si el
+            // commit no llega, tampoco queda registrada una extension que no ocurrio.
+            if (tiempoExtendido)
+            {
+                await _auditoria.RegistrarAsync(
+                    EntidadesAuditables.Subasta, subasta.Id, AccionesAuditoria.ExtensionTiempo,
+                    usuarioId, new { fechaAnterior = fechaFinAnterior, fechaNueva = subasta.FechaFin });
+            }
+
+            await transaccion.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Otra operacion modifico la subasta o alguna de las billeteras entre la
+            // lectura y este guardado: su Version ya no es la que se leyo.
+            await transaccion.RollbackAsync();
+
+            // El contexto todavia tiene la puja y los saldos que fallaron. Sin limpiarlo,
+            // el SaveChanges de la auditoria intentaria guardarlos otra vez, chocaria de
+            // nuevo contra la Version y el cliente recibiria un 500 en lugar del 409.
+            _contexto.ChangeTracker.Clear();
+
+            var actual = await _contexto.Subastas
+                .AsNoTracking()
+                .Where(s => s.Id == subasta.Id)
+                .Select(s => new { s.PujaActual, s.IncrementoMinimo, s.FechaFin })
+                .FirstAsync();
+
+            // Fuera de la transaccion que se deshizo: el enunciado pide auditar los
+            // rechazos por concurrencia, y adentro el rollback la habria borrado.
+            await _auditoria.RegistrarAsync(
+                EntidadesAuditables.Subasta, subasta.Id, AccionesAuditoria.PujaRechazadaConcurrencia,
+                usuarioId, new { montoOfrecido = monto, pujaActual = actual.PujaActual });
+
+            var montoMinimo = actual.PujaActual + actual.IncrementoMinimo;
+
+            // Cultura fija y no la del servidor: el monto tiene que leerse igual en
+            // cualquier maquina en la que corra la API.
+            var montoMinimoTexto = montoMinimo.ToString("C0", CultureInfo.GetCultureInfo("es-AR"));
+
+            throw new ConflictoDeConcurrenciaException(
+                "Otra oferta se registró antes que la tuya.",
+                new ConflictoPujaResponse
+                {
+                    Mensaje = $"Otra oferta se registró antes que la tuya. La oferta mínima ahora es de {montoMinimoTexto}.",
+                    PujaActual = actual.PujaActual,
+                    MontoMinimo = montoMinimo,
+                    FechaFin = actual.FechaFin
+                });
+        }
+
+        var seudonimo = await _contexto.Usuarios
+            .AsNoTracking()
+            .Where(u => u.Id == usuarioId)
+            .Select(u => u.Seudonimo)
+            .FirstAsync();
+
+        return new PujaRegistradaResponse
+        {
+            Id = puja.Id,
+            Monto = puja.Monto,
+            FechaPuja = puja.FechaPuja,
+            Seudonimo = seudonimo,
+            FechaFin = subasta.FechaFin,
+            MontoMinimo = subasta.PujaActual + subasta.IncrementoMinimo,
+            TiempoExtendido = tiempoExtendido
+        };
+    }
 }
