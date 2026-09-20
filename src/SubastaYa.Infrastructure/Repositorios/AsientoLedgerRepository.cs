@@ -32,12 +32,16 @@ public class AsientoLedgerRepository : IAsientoLedgerRepository
         return Task.CompletedTask;
     }
 
-    /// <summary>Historial de movimientos de una billetera, del mas reciente al mas viejo.</summary>
+    /// <summary>
+    /// Historial de movimientos de una billetera, del mas reciente al mas viejo. Trae la
+    /// subasta asociada para poder mostrar a que subasta corresponde cada retencion.
+    /// </summary>
     public async Task<IReadOnlyList<AsientoLedger>> ObtenerPorBilleteraAsync(
         int billeteraId, int pagina, int tamanoPagina)
     {
         return await _contexto.AsientosLedger
             .AsNoTracking()
+            .Include(a => a.Subasta)
             .Where(a => a.BilleteraId == billeteraId)
             .OrderByDescending(a => a.Fecha)
             .ThenByDescending(a => a.Id)
@@ -45,6 +49,9 @@ public class AsientoLedgerRepository : IAsientoLedgerRepository
             .Take(tamanoPagina)
             .ToListAsync();
     }
+
+    public Task<int> ContarPorBilleteraAsync(int billeteraId)
+        => _contexto.AsientosLedger.CountAsync(a => a.BilleteraId == billeteraId);
 
     /// <summary>
     /// Saldo total reconstruido a partir de los movimientos. Es la contraparte de

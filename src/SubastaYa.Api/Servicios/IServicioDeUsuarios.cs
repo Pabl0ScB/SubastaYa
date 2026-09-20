@@ -13,4 +13,11 @@ public interface IServicioDeUsuarios
 
     /// <summary>Lanza RecursoNoEncontradoException si el usuario no existe.</summary>
     Task<UsuarioResponse> ObtenerPorIdAsync(int id);
+
+    /// <summary>
+    /// Devuelve una fila por cada subasta en la que el usuario oferto: primero las
+    /// abiertas, de la que cierra antes a la que cierra despues, y al final las cerradas,
+    /// de la mas reciente a la mas vieja.
+    /// </summary>
+    Task<IReadOnlyList<MiParticipacionResponse>> ObtenerParticipacionesAsync(int usuarioId);
 }
