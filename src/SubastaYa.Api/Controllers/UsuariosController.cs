@@ -40,4 +40,15 @@ public class UsuariosController : ControllerBase
         var id = UsuarioActual.ObtenerId(User);
         return Ok(await _servicio.ObtenerPorIdAsync(id));
     }
+
+    /// <summary>Devuelve las subastas en las que oferto el usuario autenticado.</summary>
+    [HttpGet("me/bids")]
+    [Authorize]
+    [ProducesResponseType(typeof(IReadOnlyList<MiParticipacionResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IReadOnlyList<MiParticipacionResponse>>> ObtenerParticipaciones()
+    {
+        var usuarioId = UsuarioActual.ObtenerId(User);
+        return Ok(await _servicio.ObtenerParticipacionesAsync(usuarioId));
+    }
 }

@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 : 0;
 
             mostrarAlerta('alerta-registro',
-                marcados > 0 ? 'Revisa los datos marcados.' : error.message);
+                marcados > 0 ? 'Revisá los datos marcados.' : error.message);
         } finally {
             alternarCargando('boton-registrar', 'spinner-registrar', false);
         }

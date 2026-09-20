@@ -1,3 +1,4 @@
+using SubastaYa.Api.DTOs.Entrada;
 using SubastaYa.Api.DTOs.Salida;
 
 namespace SubastaYa.Api.Servicios;
@@ -15,4 +16,11 @@ public interface IServicioDeBilleteras
     /// Lanza ConflictoDeConcurrenciaException si la billetera cambio mientras se procesaba.
     /// </summary>
     Task<BilleteraResponse> DepositarAsync(int usuarioId, decimal monto);
+
+    /// <summary>
+    /// Devuelve una pagina de los movimientos de la billetera del usuario, del mas reciente
+    /// al mas viejo. Lanza RecursoNoEncontradoException si no tiene billetera.
+    /// </summary>
+    Task<PaginaResponse<MovimientoResponse>> ObtenerMovimientosAsync(
+        int usuarioId, PaginacionRequest paginacion);
 }
