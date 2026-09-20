@@ -48,7 +48,7 @@ public class SubastasController : ControllerBase
 
     [Authorize]
     [HttpGet("~/api/v1/users/me/auctions")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<MiPublicacionResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IReadOnlyList<MiPublicacionResponse>>> ObtenerMisPublicaciones()
     {

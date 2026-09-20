@@ -95,9 +95,9 @@ function crearTarjeta(subasta) {
 
 // Mismo criterio que subasta.js: si el backend dice "Activa" mostramos contador; si
 // dice "Programada" mostramos fecha de inicio en vez de contador; y si ya venció pero
-// el Worker (Módulo 3) todavía no la cerró, lo marcamos como "Finalizando..." en vez
-// de dejar que el contador diga "Finalizada" sobre una subasta que el backend sigue
-// reportando como activa.
+// el backend todavía no la cerró (el proceso que cierra subastas vencidas corre por
+// separado), lo marcamos como "Finalizando..." en vez de decir "Finalizada" sobre una
+// subasta que el backend sigue reportando como activa.
 function dibujarTiempoTarjeta(elemento, subasta) {
     if (subasta.estado === 'Programada') {
         elemento.textContent = `Próxima · ${formatearFecha(subasta.fechaInicio)}`;

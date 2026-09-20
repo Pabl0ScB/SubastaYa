@@ -105,8 +105,7 @@ function mostrarErroresDeCampo(erroresPorCampo) {
 // El 422 es una regla de negocio, no un error de formato: el servidor solo manda un
 // mensaje de texto, sin nombre de campo. Como ServicioDeSubastas.PublicarAsync solo
 // puede rechazar por estos cuatro motivos fijos, alcanza con reconocer el mensaje para
-// mostrarlo bajo el campo correcto en vez de un alert() generico (asi lo pide la
-// consigna del Bloque 5, Tarea 5.6).
+// mostrarlo bajo el campo correcto en vez de un alert() generico.
 const MENSAJES_DE_NEGOCIO_A_CAMPO = [
     [/no existe una categoría/i, 'categoria'],
     [/incremento mínimo no puede superar/i, 'incremento'],
