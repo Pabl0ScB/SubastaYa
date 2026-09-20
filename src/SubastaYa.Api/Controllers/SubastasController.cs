@@ -19,6 +19,7 @@ public class SubastasController : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PaginaResponse<SubastaTarjetaResponse>>> ObtenerCatalogo(
         [FromQuery] FiltroSubastasRequest filtro)
         => Ok(await _servicio.ObtenerCatalogoAsync(filtro));
