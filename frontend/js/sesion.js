@@ -5,10 +5,17 @@ function haySesion() {
     return obtenerToken() !== null;
 }
 
+// Marca si la pagina actual exige sesion. El listener de "storage" lo usa para saber
+// si cerrar sesion en otra pestana debe redirigir a esta o solo actualizar la barra.
+let paginaPrivada = false;
+
 // Se llama al principio de las paginas privadas. Devuelve false cuando ya disparo la
 // redireccion, para que la pagina corte su propia carga.
 function requiereSesion() {
-    if (haySesion()) return true;
+    if (haySesion()) {
+        paginaPrivada = true;
+        return true;
+    }
 
     // Se recuerda a donde queria entrar para volver ahi despues del login, en vez de
     // dejarlo siempre en el catalogo.
@@ -47,11 +54,15 @@ function ajustarNavegacion() {
 document.addEventListener('DOMContentLoaded', ajustarNavegacion);
 
 // La sesion vive en localStorage, compartido entre pestanas. El evento "storage" avisa
-// a las otras pestanas cuando una de ellas borra el token: sin esto, cerrar sesion en
-// una pestana dejaria a las demas con una sesion que ya no existe hasta que alguien
-// las recargue a mano.
+// a las otras pestanas cuando cambia el token: sin esto, cerrar (o iniciar) sesion en
+// una pestana dejaria a las demas con una sesion que ya no corresponde hasta que
+// alguien las recargue a mano. Solo redirige al login a las paginas privadas: el
+// catalogo y el detalle de una subasta se pueden ver sin sesion.
 window.addEventListener('storage', evento => {
-    if (evento.key === CLAVE_TOKEN && evento.newValue === null && !haySesion()) {
+    if (evento.key !== CLAVE_TOKEN) return;
+    if (!haySesion() && paginaPrivada) {
         window.location.href = 'login.html';
+    } else {
+        ajustarNavegacion();
     }
 });
