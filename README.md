@@ -1,6 +1,6 @@
 # SubastaYa
 
-Eesta es una plataforma web de subastas en tiempo real con billetera virtual y saldo en
+Esta es una plataforma web de subastas en tiempo real con billetera virtual y saldo en
 garantía (escrow).
 
 Trabajo Práctico de la cátedra **Proyecto de Software** — Carrera de Ingeniería
@@ -23,18 +23,82 @@ SubastaYa es una plataforma de subastas en línea que está construida con estos
 
 ## Stack tecnológico
 
-| Capa | Tecnología |
-|---|---|
-| Backend | C# / ASP.NET Core Web API |
-| ORM | Entity Framework Core (enfoque Code-First) |
-| Base de datos | PostgreSQL 16 (contenedor Docker) |
-| Tiempo real | SignalR |
-| Frontend | HTML, CSS y JavaScript (Vanilla) + Bootstrap |
-| Documentación de API | OpenAPI / Swagger UI |
+| Capa | Tecnología | Versión |
+|---|---|---|
+| SDK | .NET | 10.0.400 (`net10.0`) |
+| Backend | C# / ASP.NET Core Web API | 10.0.11 |
+| ORM | Entity Framework Core (enfoque Code-First) | 10.0.11 |
+| Driver de base de datos | Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3 |
+| Base de datos | PostgreSQL (contenedor Docker) | 16 |
+| Hash de contraseñas | BCrypt.Net-Next | 4.2.0 |
+| Documentación de API | Swashbuckle.AspNetCore | 10.2.3 |
+| Tiempo real (servidor) | SignalR | el de ASP.NET Core 10 |
+| Tiempo real (cliente) | `@microsoft/signalr` | 8.0.7 |
+| Frontend | HTML, CSS y JavaScript (Vanilla) + Bootstrap | 5.3.3 |
 
-## Estado 
+## Arquitectura
 
-En desarrollo — fase de diseño.
+Tres proyectos, con las dependencias apuntando siempre hacia adentro:
+
+```
+SubastaYa.Api  ──►  SubastaYa.Infrastructure  ──►  SubastaYa.Domain
+ Controllers          AppDbContext                  Entidades
+ Servicios            Configuraciones EF            Enums
+ DTOs                 Repositorios                  Excepciones
+ Middleware           Seed                          Interfaces de repositorio
+ Workers, Hubs
+```
+
+`Domain` no conoce a nadie; `Infrastructure` conoce a `Domain`; `Api` conoce a las dos.
+Por eso las entidades no tienen atributos de Entity Framework ni de ASP.NET: se pueden
+usar sin arrastrar la base de datos ni el framework web, y un cambio en la capa de
+persistencia no obliga a tocar el dominio.
+
+## Decisiones de diseño
+
+**Se guardan dos saldos, no tres.** El saldo disponible de una billetera no es una
+columna: se calcula al vuelo como total menos retenido. Persistirlo sería guardar un
+dato que ya se puede derivar de los otros dos, y en un sistema de garantía un disponible
+que se desincroniza del resto dejaría ofertar con plata que en realidad ya está
+comprometida en otra subasta.
+
+**El control de concurrencia optimista solo está en `Subasta` y en `Billetera`.** Son las
+dos únicas filas que el sistema lee, usa para calcular algo y después vuelve a escribir,
+así que son las únicas donde una actualización perdida es posible. Las pujas, los
+asientos del ledger y los registros de auditoría solo se insertan una vez y nunca se
+tocan de nuevo, así que no hay nada que perder ahí.
+
+**`PujaActual` y `LiderId` viven en la propia `Subasta`**, aunque técnicamente se podrían
+calcular mirando la puja más alta en la tabla de pujas. Es una decisión a propósito: el
+control de concurrencia necesita una fila puntual sobre la que dos operaciones puedan
+competir. Si el líder se calculara con un `MAX`, dos ofertas que llegan al mismo tiempo
+insertarían cada una su fila sin chocar entre sí, y las dos "ganarían" — que es
+exactamente lo que el control de concurrencia tiene que impedir.
+
+**Los asientos del ledger y los registros de auditoría no se modifican nunca.** Sus
+repositorios solo exponen insertar y consultar. Si en algún momento hay que corregir un
+error contable, la corrección no reescribe el asiento original: agrega uno nuevo que lo
+compensa, y así queda el rastro de que la corrección existió.
+
+**No existe una entidad `Producto`.** El título, la descripción, la imagen y la categoría
+son columnas de `Subasta` en lugar de vivir en una tabla aparte, porque en este sistema
+no hay stock ni un catálogo de productos por fuera de las subastas: un producto nace con
+su subasta y no se vuelve a subastar por separado. Separarlo hubiera agregado una tabla
+y una relación sin resolver ningún requisito real.
+
+## Usuarios de prueba
+
+Todos con la contraseña **`Test1234`**. Los saldos son los del arranque: cambian apenas
+el proceso en segundo plano cierra las subastas vencidas del sembrado, así que después de
+un rato de uso pueden no coincidir con esta tabla.
+
+| Email | Seudónimo | Saldo total | Retenido | Para qué sirve |
+|---|---|---|---|---|
+| `vendedor@test.com` | vendedor | $0 | $0 | Publica subastas; no puede ofertar en las suyas |
+| `comprador1@test.com` | comprador1 | $150.000 | $45.000 | Lidera la Notebook |
+| `comprador2@test.com` | comprador2 | $200.000 | $0 | Fue superado en la Notebook |
+| `comprador3@test.com` | comprador3 | $50.000 | $5.500 | Lidera el Álbum, que ya venció |
+| `sinfondos@test.com` | sinfondos | $500 | $0 | Para ver el rechazo por saldo insuficiente |
 
 ## Requisitos previos
 
