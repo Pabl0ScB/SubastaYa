@@ -16,6 +16,7 @@ public class CategoriasController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<CategoriaResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<CategoriaResponse>>> ObtenerCategorias()
         => Ok(await _servicio.ObtenerTodasAsync());
 }
