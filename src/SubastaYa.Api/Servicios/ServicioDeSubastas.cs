@@ -35,19 +35,13 @@ public class ServicioDeSubastas : IServicioDeSubastas
                 NombreCategoria = s.Categoria.Nombre,
                 PujaActual = s.PujaActual,
                 CantidadOfertas = s.Pujas.Count,
+                FechaInicio = s.FechaInicio,
                 FechaFin = s.FechaFin,
                 Estado = s.Estado.ToString()
             })
             .ToListAsync();
 
-        return new PaginaResponse<SubastaTarjetaResponse>
-        {
-            Items = items,
-            PaginaActual = filtro.Pagina,
-            Tamano = filtro.Tamano,
-            TotalElementos = totalElementos,
-            TotalPaginas = (int)Math.Ceiling(totalElementos / (double)filtro.Tamano)
-        };
+        return PaginaResponse.Crear(items, filtro.Pagina, filtro.Tamano, totalElementos);
     }
 
     // Sin Include: la consulta termina en una proyeccion a DTO mas arriba, y ante una
@@ -177,11 +171,41 @@ public class ServicioDeSubastas : IServicioDeSubastas
                 FechaInicio = s.FechaInicio,
                 FechaFin = s.FechaFin,
                 Estado = s.Estado.ToString(),
-                SeudonimoVendedor = "Vendedor #" + s.VendedorId,
-                SeudonimoLider = s.LiderId == null ? null : "Postor #" + s.LiderId
+                SeudonimoVendedor = s.Vendedor.Seudonimo,
+                SeudonimoLider = s.Lider == null ? null : s.Lider.Seudonimo
             })
             .FirstOrDefaultAsync()
             ?? throw new RecursoNoEncontradoException("La subasta no existe.");
+    }
+
+    public async Task<IReadOnlyList<MiPublicacionResponse>> ObtenerMisPublicacionesAsync(int vendedorId)
+    {
+        return await _contexto.Subastas
+            .AsNoTracking()
+            .Where(s => s.VendedorId == vendedorId)
+            .OrderByDescending(s => s.FechaCreacion)
+            .Select(s => new MiPublicacionResponse
+            {
+                Id = s.Id,
+                Titulo = s.Titulo,
+                UrlImagen = s.UrlImagen,
+                Estado = s.Estado.ToString(),
+                PujaActual = s.PujaActual,
+                CantidadOfertas = s.Pujas.Count,
+                FechaFin = s.FechaFin,
+                Recaudado = s.Estado == EstadoSubasta.Finalizada ? s.PujaActual : 0m,
+                EstadoAdjudicacion = s.Estado == EstadoSubasta.Finalizada
+                    ? "Adjudicada"
+                    : s.Estado == EstadoSubasta.Desierta
+                        ? "Desierta"
+                        : s.Estado == EstadoSubasta.Programada
+                            ? "Programada"
+                            : "En curso",
+                SeudonimoGanador = s.Estado == EstadoSubasta.Finalizada && s.Lider != null
+                    ? s.Lider.Seudonimo
+                    : null
+            })
+            .ToListAsync();
     }
 
     // Normaliza a UTC antes de comparar. Con Z llega como Utc y queda igual; con zona

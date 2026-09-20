@@ -26,7 +26,7 @@ public class DepositoRequest : IValidatableObject
         if (decimal.Round(Monto, 2) != Monto)
         {
             yield return new ValidationResult(
-                "El monto no puede tener mas de dos decimales.",
+                "El monto no puede tener más de dos decimales.",
                 new[] { nameof(Monto) });
         }
     }

@@ -19,7 +19,7 @@ function mostrarEstado(estado) {
     if (estado !== 'error') ocultarAlerta('alerta-catalogo');
 
     if (estado === 'vacio') {
-        const hayFiltros = ['estado','categoriaId','precioMin','precioMax']
+        const hayFiltros = ['busqueda','estado','categoriaId','precioMin','precioMax']
             .some(clave => filtros[clave] !== '');
 
         document.querySelector('#vacio-catalogo p').textContent = hayFiltros
@@ -48,6 +48,80 @@ async function cargarCatalogo() {
     }
 }
 
+function crearTarjeta(subasta) {
+    const columna = document.createElement('div');
+    columna.className = 'col';
+
+    columna.innerHTML = `
+        <div class="card h-100 tarjeta-subasta">
+            <div class="foto-subasta">
+                <img class="foto-subasta__fondo" alt="" aria-hidden="true">
+                <img class="foto-subasta__frente" alt="">
+            </div>
+            <div class="card-body d-flex flex-column">
+                <span class="badge text-bg-secondary align-self-start mb-2 js-categoria"></span>
+                <h2 class="h6 card-title js-titulo"></h2>
+                <p class="mb-1 small text-muted js-ofertas"></p>
+                <p class="fs-5 fw-semibold mb-2"><span class="js-puja"></span></p>
+                <p class="mb-3 js-tiempo"></p>
+                <a class="btn btn-primary mt-auto js-detalle">Ver subasta</a>
+            </div>
+        </div>`;
+
+    columna.querySelector('.js-titulo').textContent    = subasta.titulo;
+    columna.querySelector('.js-categoria').textContent = subasta.nombreCategoria;
+    const cantidadOfertas = subasta.cantidadOfertas;
+    columna.querySelector('.js-ofertas').textContent =
+        cantidadOfertas === 1 ? '1 oferta' : cantidadOfertas === 0 ? 'Sin ofertas' : `${cantidadOfertas} ofertas`;
+    columna.querySelector('.js-puja').textContent      = formatearPesos(subasta.pujaActual);
+
+    const fotoFondo = columna.querySelector('.foto-subasta__fondo');
+    const fotoFrente = columna.querySelector('.foto-subasta__frente');
+    fotoFondo.src = subasta.urlImagen;
+    fotoFrente.src = subasta.urlImagen;
+    fotoFrente.alt = subasta.titulo;
+
+    const placeholder = 'data:image/svg+xml,' + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="180">' +
+        '<rect width="100%" height="100%" fill="#dee2e6"/></svg>');
+    fotoFondo.addEventListener('error', () => { fotoFondo.src = placeholder; });
+    fotoFrente.addEventListener('error', () => { fotoFrente.src = placeholder; });
+
+    dibujarTiempoTarjeta(columna.querySelector('.js-tiempo'), subasta);
+    columna.querySelector('.js-detalle').href = `subasta.html?id=${subasta.id}`;
+
+    return columna;
+}
+
+// Mismo criterio que subasta.js: si el backend dice "Activa" mostramos contador; si
+// dice "Programada" mostramos fecha de inicio en vez de contador; y si ya venció pero
+// el backend todavía no la cerró (el proceso que cierra subastas vencidas corre por
+// separado), lo marcamos como "Finalizando..." en vez de decir "Finalizada" sobre una
+// subasta que el backend sigue reportando como activa.
+function dibujarTiempoTarjeta(elemento, subasta) {
+    if (subasta.estado === 'Programada') {
+        elemento.textContent = `Próxima · ${formatearFecha(subasta.fechaInicio)}`;
+        return;
+    }
+
+    const yaVencida = subasta.estado === 'Activa' && new Date(subasta.fechaFin) <= new Date();
+    if (yaVencida) {
+        elemento.textContent = 'Finalizando…';
+        return;
+    }
+
+    if (subasta.estado === 'Activa') {
+        const span = document.createElement('span');
+        span.className = 'contador js-contador';
+        span.dataset.fechaFin = subasta.fechaFin;
+        elemento.appendChild(span);
+        return;
+    }
+
+    // Finalizada / Desierta ya confirmadas por el Worker
+    elemento.textContent = subasta.estado === 'Finalizada' ? 'Finalizada' : 'Desierta';
+}
+
 // Los parametros vacios no se mandan: enviar "precioMin=" sin valor puede interpretarse
 // distinto a no mandarlo.
 function armarQuery() {
@@ -65,45 +139,6 @@ function dibujarGrilla(items) {
     grilla.replaceChildren();
 
     items.forEach(subasta => grilla.appendChild(crearTarjeta(subasta)));
-}
-
-function crearTarjeta(subasta) {
-    const columna = document.createElement('div');
-    columna.className = 'col';
-
-    columna.innerHTML = `
-        <div class="card h-100 tarjeta-subasta">
-            <img src="" class="card-img-top" alt="">
-            <div class="card-body d-flex flex-column">
-                <span class="badge text-bg-secondary align-self-start mb-2 js-categoria"></span>
-                <h2 class="h6 card-title js-titulo"></h2>
-                <p class="mb-1 small text-muted js-ofertas"></p>
-                <p class="fs-5 fw-semibold mb-2">$ <span class="js-puja"></span></p>
-                <p class="mb-3"><span class="contador js-contador" data-fecha-fin=""></span></p>
-                <a class="btn btn-primary mt-auto js-detalle">Ver subasta</a>
-            </div>
-        </div>`;
-
-    columna.querySelector('.js-titulo').textContent    = subasta.titulo;
-    columna.querySelector('.js-categoria').textContent = subasta.nombreCategoria;
-    const cantidadOfertas = subasta.cantidadOfertas;
-    columna.querySelector('.js-ofertas').textContent =
-        cantidadOfertas === 1 ? '1 oferta' : cantidadOfertas === 0 ? 'Sin ofertas' : `${cantidadOfertas} ofertas`;
-    columna.querySelector('.js-puja').textContent      = subasta.pujaActual.toLocaleString('es-AR');
-
-    const imagen = columna.querySelector('img');
-    imagen.src = subasta.urlImagen;
-    imagen.alt = subasta.titulo;
-    imagen.addEventListener('error', () => {
-        imagen.src = 'data:image/svg+xml,' + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="180">' +
-            '<rect width="100%" height="100%" fill="#dee2e6"/></svg>');
-    });
-
-    columna.querySelector('.js-contador').dataset.fechaFin = subasta.fechaFin;
-    columna.querySelector('.js-detalle').href = `subasta.html?id=${subasta.id}`;
-
-    return columna;
 }
 
 function dibujarPaginacion({ paginaActual, totalPaginas }) {

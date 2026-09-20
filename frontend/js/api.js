@@ -115,11 +115,11 @@ function mensajeDeError(status, cuerpo) {
         if (Array.isArray(primero) && primero.length) return primero[0];
     }
 
-    if (status === 401) return 'Tenes que iniciar sesion para hacer esto.';
-    if (status === 403) return 'No tenes permiso para hacer esto.';
+    if (status === 401) return 'Tenés que iniciar sesión para hacer esto.';
+    if (status === 403) return 'No tenés permiso para hacer esto.';
     if (status === 404) return 'No encontramos lo que buscabas.';
-    if (status >= 500) return 'El servidor tuvo un problema. Intentalo de nuevo en un momento.';
-    return 'Ocurrio un error inesperado.';
+    if (status >= 500) return 'El servidor tuvo un problema. Intentá de nuevo en un momento.';
+    return 'Ocurrió un error inesperado.';
 }
 
 // La API expone solo lecturas y altas: no hay ningun endpoint PUT ni DELETE, asi que

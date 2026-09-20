@@ -43,8 +43,84 @@
     <main class="container py-4">
         <h1 class="h3 mb-4">Mis actividades</h1>
 
+        <ul class="nav nav-tabs mb-3" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="pestana-compras" type="button" role="tab"
+                        data-bs-toggle="tab" data-bs-target="#panel-compras"
+                        aria-controls="panel-compras" aria-selected="true">Mis Compras / Pujas</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pestana-publicaciones" type="button" role="tab"
+                        data-bs-toggle="tab" data-bs-target="#panel-publicaciones"
+                        aria-controls="panel-publicaciones" aria-selected="false">Mis Publicaciones</button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="panel-compras" role="tabpanel" aria-labelledby="pestana-compras">
+            <div id="alerta-compras" class="alert" role="alert" hidden></div>
+
+            <!-- Cargando -->
+            <div id="cargando-compras" class="text-center py-5">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Cargando…</span>
+                </div>
+            </div>
+
+            <!-- Vacío -->
+            <p id="vacio-compras" class="text-muted text-center py-5 mb-0" hidden>Todavía no participaste en ninguna subasta.</p>
+
+            <!-- Éxito -->
+            <div class="table-responsive" id="tabla-compras" hidden>
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Subasta</th>
+                            <th scope="col" class="text-end">Mi oferta más alta</th>
+                            <th scope="col" class="text-end">Oferta más alta actual</th>
+                            <th scope="col">Cierre</th>
+                            <th scope="col">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpo-compras"></tbody>
+                </table>
+            </div>
+            </div>
+
+            <div class="tab-pane fade" id="panel-publicaciones" role="tabpanel" aria-labelledby="pestana-publicaciones">
+            <div id="alerta-publicaciones" class="alert" role="alert" hidden></div>
+
+            <!-- Cargando -->
+            <div id="cargando-publicaciones" class="text-center py-5">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Cargando…</span>
+                </div>
+            </div>
+
+            <!-- Vacío -->
+            <p id="vacio-publicaciones" class="text-muted text-center py-5 mb-0" hidden>Todavía no publicaste ninguna subasta.</p>
+
+            <!-- Éxito -->
+            <div class="table-responsive" id="tabla-publicaciones" hidden>
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Subasta</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col" class="text-end">Ofertas</th>
+                            <th scope="col" class="text-end">Oferta más alta</th>
+                            <th scope="col" class="text-end">Recaudado</th>
+                            <th scope="col">Adjudicación</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpo-publicaciones"></tbody>
+                </table>
+            </div>
+            </div>
+        </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/mis-actividades.js"></script>
 </body>
 </html>
