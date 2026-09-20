@@ -15,7 +15,40 @@ body {
 .contador-critico { color: var(--bs-danger-text-emphasis); }
 
 /* Imagen de las tarjetas del catalogo */
-.tarjeta-subasta img {
+.tarjeta-subasta .foto-subasta {
+    aspect-ratio: auto;
     height: 180px;
+}
+
+/* Foto de la subasta */
+/* Dos capas de la misma imagen: atras ampliada y desenfocada para llenar el marco, adelante
+   entera. Una foto vertical entra completa sin recortarse ni dejar barras. */
+.foto-subasta {
+    position: relative;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    background: var(--bs-secondary-bg);
+}
+
+.foto-subasta__fondo,
+.foto-subasta__frente {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* El scale evita que el desenfoque deje los bordes transparentes. */
+.foto-subasta__fondo {
     object-fit: cover;
+    filter: blur(24px) brightness(.7);
+    transform: scale(1.1);
+}
+
+.foto-subasta__frente {
+    object-fit: contain;
+}
+
+.descripcion-subasta {
+    white-space: pre-line;
 }

@@ -22,7 +22,10 @@ function actualizarContadores() {
         const restante = fin - new Date();
 
         if (restante <= 0) {
-            elemento.textContent = 'Finalizada';
+            // No se puede afirmar "Finalizada": recien lo confirma el proceso que cierra
+            // las subastas vencidas, y hasta que corra el backend la sigue informando
+            // como Activa. Mismo texto que usan catalogo.js y subasta.js en ese intervalo.
+            elemento.textContent = 'Finalizando…';
             pintar(elemento, 'contador-critico');
             return;
         }
