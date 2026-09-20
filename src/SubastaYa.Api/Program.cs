@@ -59,6 +59,7 @@ builder.Services.AddScoped<IServicioDeBilleteras, ServicioDeBilleteras>();
 builder.Services.AddScoped<IRegistroAuditoriaRepository, RegistroAuditoriaRepository>();
 builder.Services.AddScoped<IServicioDeCategorias, ServicioDeCategorias>();
 builder.Services.AddScoped<IServicioDeAuditoria, ServicioDeAuditoria>();
+builder.Services.AddScoped<IServicioDePujas, ServicioDePujas>();
 
 // Controllers y documentacion de la API
 builder.Services.AddControllers();
