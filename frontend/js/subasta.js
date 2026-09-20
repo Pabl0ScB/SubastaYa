@@ -57,6 +57,10 @@ function dibujarDetalle(detalle) {
 
     dibujarEstadoYTiempo(detalle);
     dibujarFoto(detalle);
+
+    // Avisa a los otros scripts de la pantalla (sala en vivo y formulario de oferta)
+    // que el detalle esta dibujado, con los datos con los que se dibujo.
+    document.dispatchEvent(new CustomEvent('subasta:cargada', { detail: detalle }));
 }
 
 function dibujarEstadoYTiempo(detalle) {
