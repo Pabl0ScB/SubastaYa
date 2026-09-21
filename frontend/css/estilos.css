@@ -1,97 +1,25 @@
 /* Estilos propios de SubastaYa. Bootstrap se carga por CDN en cada pagina.
 
-   Linea de diseno: casa de subastas, no dashboard generico. Un serif editorial para
-   la marca y los titulos de pantalla (como el nombre de un lote en un catalogo
-   impreso), sans para todo lo operativo, azul marino como color de marca y dorado
-   reservado unicamente para lo que tiene que ver con dinero y pujas -- para que el
-   color lleve significado en vez de ser decorativo. Bordes finos y sombra minima en
-   vez de sombra difusa por todos lados: se apoya en Bootstrap, no lo tapa. */
+   Sin recolorear nada de Bootstrap: navbar negra y colores por defecto, tal como
+   estaban. El pulido es solo de forma -- tipografia, espaciado, sombras suaves y
+   una leve elevacion al interactuar -- para que se vea mas cuidado sin inventar una
+   paleta nueva. */
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-    --sy-marca: #14213d;
-    --sy-marca-oscura: #0a1220;
-    --sy-oro: #96700a;
-    --sy-oro-suave: #fbf3df;
     --sy-radio: 0.5rem;
-    --sy-borde: rgba(20, 33, 61, 0.14);
-    --sy-sombra: 0 1px 2px rgba(10, 18, 32, 0.06);
-    --sy-sombra-hover: 0 10px 20px rgba(10, 18, 32, 0.12);
+    --sy-sombra: 0 1px 2px rgba(15, 23, 42, 0.06);
+    --sy-sombra-hover: 0 10px 20px rgba(15, 23, 42, 0.12);
 }
 
 body {
     min-height: 100vh;
     font-family: 'Inter', var(--bs-body-font-family);
-    /* Beige muy tenue, no gris de dashboard: recuerda al papel de un catalogo. */
-    background-color: #f7f5f0;
-    color: #1c2333;
 }
 
-/* El serif solo va en la marca y en el titulo de cada pantalla -- el nombre de una
-   subasta es, ni mas ni menos, el nombre de un lote de catalogo. El resto de la
-   interfaz (botones, tablas, formularios) sigue en sans para que se lea rapido. */
-.navbar-brand, h1 {
-    font-family: 'Playfair Display', 'Georgia', serif;
-    font-weight: 700;
+h1, h2, h3, h4, h5, h6, .navbar-brand {
     letter-spacing: -0.01em;
-}
-
-h2, h3, h4, h5, h6 {
-    letter-spacing: -0.01em;
-}
-
-/* Bootstrap fija el color de cada componente como variables propias (--bs-btn-bg,
-   etc.), no las toma de --bs-primary en tiempo real: para recolorear la hoja del CDN
-   sin recompilarla hay que pisar esas variables por componente. */
-.btn-primary {
-    --bs-btn-bg: var(--sy-marca);
-    --bs-btn-border-color: var(--sy-marca);
-    --bs-btn-hover-bg: var(--sy-marca-oscura);
-    --bs-btn-hover-border-color: var(--sy-marca-oscura);
-    --bs-btn-active-bg: var(--sy-marca-oscura);
-    --bs-btn-active-border-color: var(--sy-marca-oscura);
-    --bs-btn-disabled-bg: var(--sy-marca);
-    --bs-btn-disabled-border-color: var(--sy-marca);
-}
-
-.btn-outline-primary {
-    --bs-btn-color: var(--sy-marca);
-    --bs-btn-border-color: var(--sy-marca);
-    --bs-btn-hover-bg: var(--sy-marca);
-    --bs-btn-hover-border-color: var(--sy-marca);
-    --bs-btn-active-bg: var(--sy-marca);
-    --bs-btn-active-border-color: var(--sy-marca);
-}
-
-a, .page-link {
-    color: var(--sy-marca);
-}
-
-a:hover, .page-link:hover {
-    color: var(--sy-marca-oscura);
-}
-
-.form-control:focus, .form-select:focus {
-    border-color: var(--sy-marca);
-    box-shadow: 0 0 0 0.2rem rgba(20, 33, 61, 0.14);
-}
-
-/* Dorado, a proposito, solo donde hay plata en juego: la oferta actual y los tres
-   saldos de la billetera. En ningun otro lado del sitio aparece este color, para que
-   siga leyendose como "esto es dinero" y no como una segunda marca compitiendo con
-   el azul. */
-#puja-actual, .js-puja, #saldo-total, #saldo-disponible, #saldo-retenido {
-    color: var(--sy-oro);
-}
-
-.navbar {
-    background-color: var(--sy-marca) !important;
-    border-bottom: 3px solid var(--sy-oro);
-}
-
-.navbar .navbar-brand {
-    color: #fff !important;
 }
 
 /* Transicion pareja para lo que cambia de color, sombra o posicion al interactuar. */
@@ -110,21 +38,19 @@ a:hover, .page-link:hover {
 }
 
 .card {
-    border: 1px solid var(--sy-borde);
+    border: 1px solid var(--bs-border-color-translucent);
     border-radius: var(--sy-radio);
     box-shadow: var(--sy-sombra);
 }
 
 .alert {
     border-radius: var(--sy-radio);
-    border-width: 0;
-    border-left: 4px solid transparent;
 }
 
-.alert-success { border-left-color: #146c43; }
-.alert-danger  { border-left-color: #b02a37; }
-.alert-warning { border-left-color: var(--sy-oro); }
-.alert-info    { border-left-color: var(--sy-marca); }
+/* Los montos se distinguen por peso, no por color: nada de acento nuevo. */
+#puja-actual, .js-puja, #saldo-total, #saldo-disponible, #saldo-retenido {
+    font-weight: 700;
+}
 
 /* Contador regresivo de las subastas */
 .contador {
