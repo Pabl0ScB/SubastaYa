@@ -1,11 +1,16 @@
-/* Estilos propios de SubastaYa. Bootstrap se carga por CDN en cada pagina. */
+/* Estilos propios de SubastaYa. Bootstrap se carga por CDN en cada pagina.
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+   Sin recolorear nada de Bootstrap: navbar negra y colores por defecto, tal como
+   estaban. El pulido es solo de forma -- tipografia, espaciado, sombras suaves y
+   una leve elevacion al interactuar -- para que se vea mas cuidado sin inventar una
+   paleta nueva. */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-    --sy-radio: 0.75rem;
-    --sy-sombra: 0 2px 10px rgba(15, 23, 42, 0.06);
-    --sy-sombra-hover: 0 12px 24px rgba(15, 23, 42, 0.12);
+    --sy-radio: 0.5rem;
+    --sy-sombra: 0 1px 2px rgba(15, 23, 42, 0.06);
+    --sy-sombra-hover: 0 10px 20px rgba(15, 23, 42, 0.12);
 }
 
 body {
@@ -13,33 +18,38 @@ body {
     font-family: 'Inter', var(--bs-body-font-family);
 }
 
-h1, h2, h3, h4, h5, h6,
-.navbar-brand {
-    letter-spacing: -0.02em;
+h1, h2, h3, h4, h5, h6, .navbar-brand {
+    letter-spacing: -0.01em;
 }
 
 /* Transicion pareja para lo que cambia de color, sombra o posicion al interactuar. */
-.btn, .card, .nav-link, .alert, .form-control, .form-select {
-    transition: box-shadow .2s ease, transform .2s ease, background-color .15s ease;
-}
-
-.navbar {
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 16px rgba(0, 0, 0, 0.15);
+.btn, .card, .alert, .form-control, .form-select {
+    transition: box-shadow .2s ease, transform .2s ease, background-color .15s ease, border-color .15s ease;
 }
 
 .btn {
     border-radius: var(--sy-radio);
+    font-weight: 600;
 }
 
 .btn-primary:hover, .btn-outline-primary:hover {
     transform: translateY(-1px);
-    box-shadow: var(--sy-sombra);
+    box-shadow: var(--sy-sombra-hover);
 }
 
 .card {
     border: 1px solid var(--bs-border-color-translucent);
     border-radius: var(--sy-radio);
     box-shadow: var(--sy-sombra);
+}
+
+.alert {
+    border-radius: var(--sy-radio);
+}
+
+/* Los montos se distinguen por peso, no por color: nada de acento nuevo. */
+#puja-actual, .js-puja, #saldo-total, #saldo-disponible, #saldo-retenido {
+    font-weight: 700;
 }
 
 /* Contador regresivo de las subastas */
