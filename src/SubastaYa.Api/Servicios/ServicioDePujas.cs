@@ -1,7 +1,9 @@
 using System.Globalization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
+using Npgsql;
 using SubastaYa.Api.Configuracion;
 using SubastaYa.Api.DTOs.Salida;
 using SubastaYa.Api.Hubs;
@@ -242,36 +244,19 @@ public class ServicioDePujas : IServicioDePujas
         {
             // Otra operacion modifico la subasta o alguna de las billeteras entre la
             // lectura y este guardado: su Version ya no es la que se leyo.
-            await transaccion.RollbackAsync();
-
-            // El contexto todavia tiene la puja y los saldos que fallaron. Sin limpiarlo,
-            // el SaveChanges de la auditoria intentaria guardarlos otra vez, chocaria de
-            // nuevo contra la Version y el cliente recibiria un 500 en lugar del 409.
-            _contexto.ChangeTracker.Clear();
-
-            var actual = await _contexto.Subastas
-                .AsNoTracking()
-                .Where(s => s.Id == subasta.Id)
-                .Select(s => new { s.PujaActual, s.IncrementoMinimo, s.FechaFin })
-                .FirstAsync();
-
-            // Fuera de la transaccion que se deshizo: el enunciado pide auditar los
-            // rechazos por concurrencia, y adentro el rollback la habria borrado.
-            await _auditoria.RegistrarAsync(
-                EntidadesAuditables.Subasta, subasta.Id, AccionesAuditoria.PujaRechazadaConcurrencia,
-                usuarioId, new { montoOfrecido = monto, pujaActual = actual.PujaActual });
-
-            var montoMinimo = actual.PujaActual + actual.IncrementoMinimo;
-
-            throw new ConflictoDeConcurrenciaException(
-                "Otra oferta se registró antes que la tuya.",
-                new ConflictoPujaResponse
-                {
-                    Mensaje = $"Otra oferta se registró antes que la tuya. La oferta mínima ahora es de {FormatearPesos(montoMinimo)}.",
-                    PujaActual = actual.PujaActual,
-                    MontoMinimo = montoMinimo,
-                    FechaFin = actual.FechaFin
-                });
+            throw await ManejarConflictoDeConcurrenciaAsync(transaccion, subasta.Id, usuarioId, monto);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException
+               { SqlState: PostgresErrorCodes.CheckViolation, ConstraintName: "CK_Billetera_SaldoRetenidoNoNegativo" })
+        {
+            // Dos ofertas concurrentes por el mismo lider anterior pueden leer su billetera
+            // en momentos distintos: la que llega segunda ve la version ya actualizada por
+            // la primera (su lectura fue posterior, asi que el chequeo de Version no la
+            // frena), pero sigue restando el PujaActual que leyo al principio, de antes de
+            // que la primera liberara esa retencion. El resultado da negativo y lo frena
+            // este CHECK en vez de la concurrencia optimista. Para quien pujo, es el mismo
+            // caso: otra oferta le gano de mano.
+            throw await ManejarConflictoDeConcurrenciaAsync(transaccion, subasta.Id, usuarioId, monto);
         }
 
         var seudonimo = await _contexto.Usuarios
@@ -305,5 +290,45 @@ public class ServicioDePujas : IServicioDePujas
         }
 
         return respuesta;
+    }
+
+    // Comun a las dos formas en que una oferta simultanea puede perder la carrera:
+    // la Version de la subasta ya no coincide, o la resta sobre la billetera del lider
+    // anterior dio negativa porque otra oferta ya la habia liberado. En los dos casos se
+    // deshace la transaccion y se audita igual: para quien pujo es el mismo rechazo.
+    private async Task<ConflictoDeConcurrenciaException> ManejarConflictoDeConcurrenciaAsync(
+        IDbContextTransaction transaccion, int subastaId, int usuarioId, decimal monto)
+    {
+        await transaccion.RollbackAsync();
+
+        // El contexto todavia tiene la puja y los saldos que fallaron. Sin limpiarlo,
+        // el SaveChanges de la auditoria intentaria guardarlos otra vez, chocaria de
+        // nuevo contra la Version (o el CHECK) y el cliente recibiria un 500 en lugar
+        // del 409.
+        _contexto.ChangeTracker.Clear();
+
+        var actual = await _contexto.Subastas
+            .AsNoTracking()
+            .Where(s => s.Id == subastaId)
+            .Select(s => new { s.PujaActual, s.IncrementoMinimo, s.FechaFin })
+            .FirstAsync();
+
+        // Fuera de la transaccion que se deshizo: el enunciado pide auditar los
+        // rechazos por concurrencia, y adentro el rollback la habria borrado.
+        await _auditoria.RegistrarAsync(
+            EntidadesAuditables.Subasta, subastaId, AccionesAuditoria.PujaRechazadaConcurrencia,
+            usuarioId, new { montoOfrecido = monto, pujaActual = actual.PujaActual });
+
+        var montoMinimo = actual.PujaActual + actual.IncrementoMinimo;
+
+        return new ConflictoDeConcurrenciaException(
+            "Otra oferta se registró antes que la tuya.",
+            new ConflictoPujaResponse
+            {
+                Mensaje = $"Otra oferta se registró antes que la tuya. La oferta mínima ahora es de {FormatearPesos(montoMinimo)}.",
+                PujaActual = actual.PujaActual,
+                MontoMinimo = montoMinimo,
+                FechaFin = actual.FechaFin
+            });
     }
 }
